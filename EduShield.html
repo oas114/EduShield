@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduShield 教育隱私保護</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+  <!-- ===== Tailwind CSS 混合載入機制 =====
+       順位 1：CDN（連網優先）
+       順位 2：本地 style.css（斷網備援）
+       順位 3：防呆引導畫面（斷網且缺本地檔案）
+  ===== -->
+  <script>
+    (function () {
+      // --- 順位 1：動態載入 CDN ---
+      var cdnScript = document.createElement('script');
+      cdnScript.src = 'https://cdn.tailwindcss.com';
+
+      cdnScript.onload = function () {
+        // CDN 成功 → 套用 tailwind.config
+        if (window.tailwind) {
+          tailwind.config = {
+            theme: {
+              extend: {
+                fontFamily: {
+                  sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                  mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+                },
+                colors: {
+                  paper: '#FAF9F6',
+                  ink: '#292524'
+                }
+              }
+            }
+          };
+        }
+      };
+
+      cdnScript.onerror = function () {
+        // CDN 失敗（斷網） → 順位 2：嘗試本地 style.css
+        console.warn('[EduShield] Tailwind CDN 載入失敗，嘗試本地 style.css …');
+        var localLink = document.createElement('link');
+        localLink.rel = 'stylesheet';
+        localLink.href = 'style.css';
+
+        localLink.onerror = function () {
+          // 本地也失敗 → 順位 3：防呆引導畫面
+          console.error('[EduShield] 本地 style.css 也不存在，顯示防呆引導。');
+
+          // 隱藏主 UI
+          var showOverlay = function () {
+            var body = document.body;
+            if (!body) return;
+            // 隱藏所有直接子元素
+            Array.from(body.children).forEach(function (el) {
+              el.style.display = 'none';
+            });
+
+            // 插入防呆畫面
+            var overlay = document.createElement('div');
+            overlay.style.cssText = [
+              'position:fixed', 'inset:0', 'z-index:99999',
+              'display:flex', 'align-items:center', 'justify-content:center',
+              'background:#fefce8', 'font-family:system-ui,sans-serif', 'padding:2rem'
+            ].join(';');
+
+            overlay.innerHTML = [
+              '<div style="max-width:560px;background:#fff;border:2px solid #f59e0b;border-radius:12px;padding:2.5rem;box-shadow:0 10px 40px rgba(0,0,0,.12);text-align:center;">',
+              '  <div style="font-size:3rem;line-height:1;margin-bottom:1rem;">⚠️</div>',
+              '  <h1 style="font-size:1.25rem;font-weight:700;color:#92400e;margin:0 0 .75rem;">系統啟動失敗（無網路連線）</h1>',
+              '  <p style="color:#44403c;line-height:1.7;margin:0 0 1.25rem;">',
+              '    系統偵測到目前為<strong>無網路環境</strong>，且遺失本地樣式表 <code style="background:#f5f5f4;border-radius:4px;padding:2px 6px;font-size:.85em;">style.css</code>。',
+              '  </p>',
+              '  <ol style="text-align:left;color:#44403c;line-height:1.9;margin:0 0 1.5rem;padding-left:1.4rem;">',
+              '    <li>請前往專案發布頁面，下載 <code style="background:#f5f5f4;border-radius:4px;padding:2px 4px;font-size:.85em;">style.css</code>。</li>',
+              '    <li>將 <code style="background:#f5f5f4;border-radius:4px;padding:2px 4px;font-size:.85em;">style.css</code> 放置於與 <code style="background:#f5f5f4;border-radius:4px;padding:2px 4px;font-size:.85em;">EduShield.html</code> <strong>相同的資料夾</strong>下。</li>',
+              '    <li>重新整理此網頁（<kbd style="border:1px solid #d4d4d4;border-radius:4px;padding:1px 6px;background:#fafaf9;">F5</kbd>）。</li>',
+              '  </ol>',
+              '  <button onclick="location.reload()" style="background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:.65rem 1.5rem;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'#d97706\'" onmouseout="this.style.background=\'#f59e0b\'">',
+              '    🔄&nbsp; 重新整理',
+              '  </button>',
+              '</div>'
+            ].join('');
+
+            body.appendChild(overlay);
+          };
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', showOverlay);
+          } else {
+            showOverlay();
+          }
+        };
+
+        document.head.appendChild(localLink);
+      };
+
+      document.head.appendChild(cdnScript);
+    })();
+  </script>
+
+  <style>
+    /* 高亮編輯器核心 */
+    .editor-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .editor-backdrop, .editor-textarea {
+      margin: 0;
+      padding: 1rem;
+      border: 1px solid transparent;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      tab-size: 4;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      word-break: break-all;
+    }
+    .editor-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 1;
+      overflow: hidden; 
+      background-color: transparent;
+      color: transparent;
+      pointer-events: none;
+    }
+    .editor-textarea {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 2;
+      background-color: transparent;
+      color: inherit;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+    }
+    .editor-textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+      border-radius: 0.5rem;
+    }
+    
+    /* 高亮標記 */
+    mark {
+      background-color: rgba(59, 130, 246, 0.15); 
+      color: transparent;
+      border-radius: 2px;
+      transition: background-color 0.2s;
+    }
+    mark.highlight-active {
+      background-color: rgba(59, 130, 246, 0.4); 
+    }
+    mark.highlight-ai {
+      background-color: rgba(168, 85, 247, 0.25); 
+    }
+    mark.highlight-ai.highlight-active {
+      background-color: rgba(168, 85, 247, 0.45); 
+    }
+    mark.highlight-critical {
+      background-color: rgba(239, 68, 68, 0.25); 
+    }
+    mark.highlight-critical.highlight-active {
+      background-color: rgba(239, 68, 68, 0.45); 
+    }
+
+    /* 捲動條美化 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+    /* Tooltip */
+    .group:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-paper text-ink h-screen overflow-hidden flex flex-col font-sans">
+
+  <!-- 頂部導覽與頁籤 -->
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-20 shadow-sm flex-shrink-0">
+    <div class="max-w-[90rem] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-6">
+        <div>
+          <h1 class="font-bold text-lg tracking-tight">EduShield <span class="font-normal text-stone-500 text-sm ml-1">教育隱私保護</span></h1>
+        </div>
+        <!-- 頁籤切換 -->
+        <div class="flex flex-wrap bg-stone-100 p-1 rounded-lg gap-1">
+          <button id="tabBtn1" onclick="switchTab(1)" class="px-5 py-1.5 text-sm font-semibold rounded-md bg-white shadow-sm text-blue-600 transition-all">
+            去識別化
+          </button>
+          <button id="tabBtn2" onclick="switchTab(2)" class="px-5 py-1.5 text-sm font-medium rounded-md text-stone-500 hover:text-stone-700 transition-all">
+            還原
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        <div class="flex items-center gap-2">
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCsvUpload(event)" />
+          <button onclick="document.getElementById('csvFileInput').click()" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+            匯入自訂詞庫 (CSV)
+          </button>
+          <button id="dictCountLabel" onclick="openEditCsvModal()" class="bg-white hover:bg-stone-100 text-stone-600 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors border border-stone-300 hidden sm:block">
+            詞庫: 0
+          </button>
+        </div>
+        <button onclick="openGuide()" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+          教育隱私保護指南
+        </button>
+        <button onclick="openSettings()" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+          系統設定
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 阻斷警示橫幅 -->
+  <div id="hardBlockBanner" class="hidden flex-shrink-0 bg-red-50 border-b border-red-200 px-4 py-2.5 shadow-inner flex flex-wrap gap-2 items-center justify-between z-10">
+    <div class="text-xs font-medium text-red-700 flex-1">
+      警告：偵測到潛在特種極敏感詞彙，系統已強制鎖定複製功能，嚴禁外流！
+    </div>
+    <button onclick="openUnlockModal()" class="bg-white border border-red-200 text-red-700 hover:bg-red-100 px-3 py-1 rounded text-xs font-bold transition-colors shadow-sm whitespace-nowrap">
+      查看詳情與解鎖
+    </button>
+  </div>
+
+  <!-- 主要內容區 (h-screen 滿版設計，內部獨立捲動) -->
+  <main class="max-w-[90rem] mx-auto p-4 w-full flex-1 flex flex-col min-h-0">
+
+    <!-- ==================== 情境一：去識別化處理 ==================== -->
+    <div id="viewPhase1" class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+      
+      <!-- 左側：資料輸入與預檢 -->
+      <section class="flex-1 bg-white rounded-xl border border-stone-200 shadow-sm flex flex-col min-h-0">
+        <div class="p-3 border-b border-stone-100 flex justify-between items-center bg-stone-50/50 flex-shrink-0">
+          <label class="font-semibold text-sm text-stone-800">原始資料輸入</label>
+          <button onclick="clearLeftInput()" class="text-xs text-stone-500 hover:text-stone-800 transition-colors">清除內容</button>
+        </div>
+        
+        <!-- 高亮編輯器核心 -->
+        <div class="flex-1 relative bg-white min-h-0">
+          <div class="editor-container">
+            <div id="backdrop" class="editor-backdrop"></div>
+            <!-- 清空預設文字 -->
+            <textarea id="rawInput" class="editor-textarea" spellcheck="false" placeholder="在此貼上公文或 Excel 表格... 選取文字可快速設為機密項目。"></textarea>
+          </div>
+        </div>
+
+        <!-- 預檢膠囊區 -->
+        <div class="p-3 border-t border-stone-100 bg-white flex-shrink-0">
+          <div class="text-xs font-medium text-stone-500 mb-2">偵測項目 (點擊移除以取消遮蔽)</div>
+          <div id="entityChips" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 -m-1">
+            <span class="text-stone-400 italic text-xs py-1">無資料</span>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-stone-100 bg-stone-50 flex-shrink-0">
+          <button id="phase1Btn" onclick="processAnonymizePhase1()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2">
+            <span id="phase1BtnText">執行去識別化</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 右側：結果與提示詞 -->
+      <section class="flex-1 bg-white rounded-xl border border-stone-200 shadow-sm flex flex-col min-h-0">
+        
+        <div class="p-3 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
+          <label class="font-semibold text-sm text-stone-800">遮蔽項目明細</label>
+        </div>
+        
+        <div id="anonymizeReport" class="flex-shrink-0 h-1/3 overflow-y-auto p-4 text-xs space-y-1.5 font-mono text-stone-700 bg-white border-b border-stone-100">
+          <div class="text-stone-400 italic">尚未執行</div>
+        </div>
+
+        <div class="p-3 bg-stone-50/50 flex-shrink-0">
+          <label class="font-semibold text-sm text-stone-800">去識別化後之資料</label>
+        </div>
+
+        <div class="flex-1 relative min-h-0">
+          <textarea id="anonymizedOutput" readonly class="absolute inset-0 w-full h-full p-4 text-sm bg-white text-stone-600 resize-none font-mono focus:outline-none overflow-y-auto" style="tab-size: 4;" placeholder="執行後將顯示於此..."></textarea>
+        </div>
+
+        <div class="p-4 bg-stone-50 border-t border-stone-100 flex-shrink-0 flex gap-3">
+          <button id="phase2Btn" onclick="processAnonymizePhase2()" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2">
+            <svg id="phase2Spinner" class="hidden animate-spin w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"></path></svg>
+            <span id="phase2BtnText" class="whitespace-nowrap truncate">透過地端 AI 深度掃描</span>
+          </button>
+          <button id="copyPromptBtn" onclick="copyAnonymizedPrompt()" disabled class="flex-1 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm text-center">
+            複製已遮蔽資料
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+
+    <!-- ==================== 情境二：還原與對照 ==================== -->
+    <div id="viewPhase2" class="hidden flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+      
+      <!-- 左側：原始資料唯讀與膠囊 -->
+      <section class="flex-1 bg-white rounded-xl border border-stone-200 shadow-sm flex flex-col min-h-0">
+        <div class="p-3 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
+          <label class="font-semibold text-sm text-stone-800">原始資料與遮蔽紀錄</label>
+        </div>
+        
+        <div id="readOnlyOriginal" class="flex-1 p-4 text-sm bg-white font-mono text-stone-500 overflow-y-auto whitespace-pre-wrap min-h-0 leading-[2.25]" style="tab-size: 4;">
+          請先於「去識別化處理」情境中執行打包。
+        </div>
+
+        <div class="p-3 border-t border-stone-100 bg-white flex-shrink-0">
+          <div class="text-xs font-medium text-stone-500 mb-2">遮蔽項目 (游標懸停檢視標籤)</div>
+          <div id="restoreChips" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1 -m-1">
+            <!-- Tooltip 互動膠囊 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 右側：AI 回覆與還原結果 -->
+      <section class="flex-1 flex flex-col gap-4 min-h-0">
+        
+        <!-- 動態收合區：貼上 AI 回覆 -->
+        <div id="aiReplyContainer" class="bg-white rounded-xl border border-stone-200 flex flex-col transition-all duration-300 flex-shrink-0 shadow-sm">
+          <div class="p-3 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+            <label class="font-semibold text-sm text-stone-800">外部 AI 回覆</label>
+            <div class="flex gap-2">
+              <button onclick="openAiReplyModal()" class="text-xs text-stone-500 hover:text-stone-800 transition-colors">放大檢視</button>
+              <button onclick="document.getElementById('aiReplyInput').value = ''" class="text-xs text-stone-400 hover:text-stone-600">清除</button>
+            </div>
+          </div>
+          <textarea id="aiReplyInput" class="w-full h-40 p-4 text-sm bg-white border-none resize-none font-mono focus:outline-none transition-all duration-300" style="tab-size: 4;" placeholder="請貼上 ChatGPT / Claude 的回覆..."></textarea>
+          <div class="p-3 border-t border-stone-100 bg-stone-50 flex gap-2">
+            <button onclick="pasteFromClipboard()" class="flex-[1] bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-sm whitespace-nowrap">
+              貼上剪貼簿
+            </button>
+            <button onclick="processRestore()" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+              執行還原
+            </button>
+          </div>
+        </div>
+
+        <!-- 還原結果區 -->
+        <div class="flex-1 bg-white rounded-xl border border-stone-200 flex flex-col min-h-0 shadow-sm">
+          <div class="p-3 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center flex-shrink-0">
+            <div class="flex items-center gap-3">
+              <label class="font-semibold text-sm text-stone-800">還原結果</label>
+              <div class="flex items-center gap-1 text-xs text-stone-500">
+                <span>遮蔽符號：</span>
+                <input type="text" id="customMaskSymbol" value="■" placeholder="■" maxlength="1" class="w-8 text-center border border-stone-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-stone-700 py-0.5 cursor-text shadow-sm">
+              </div>
+            </div>
+            <div id="integrityStatus" class="text-xs font-medium"></div>
+          </div>
+          <div id="restoredOutputView" contenteditable="true" class="flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-shadow" style="tab-size: 4;"></div>
+          <div class="p-3 border-t border-stone-100 bg-stone-50 flex-shrink-0 flex gap-2">
+            <button onclick="clearRestoredResult()" class="flex-[1] bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-sm whitespace-nowrap">
+              清除結果
+            </button>
+            <button onclick="copyRestoredResult()" class="flex-[3] bg-stone-800 hover:bg-stone-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+              複製還原文字
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ==================== 放大編輯 AI 回覆 Modal ==================== -->
+  <div id="aiReplyModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col transform scale-95 transition-transform duration-300 border border-stone-200">
+      <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-stone-800">放大編輯外部 AI 回覆</h2>
+        <div class="flex items-center gap-3">
+          <button onclick="pasteFromClipboard(true)" class="text-xs text-blue-600 font-medium hover:text-blue-800">從剪貼簿貼上</button>
+          <button onclick="closeAiReplyModal()" class="text-stone-400 hover:text-stone-600 font-medium text-lg">&times;</button>
+        </div>
+      </div>
+      <div class="flex-1 relative">
+        <textarea id="aiReplyInputLarge" class="absolute inset-0 w-full h-full p-6 text-sm bg-white border-none resize-none font-mono focus:outline-none" style="tab-size: 4;" placeholder="請貼上 ChatGPT / Claude 的回覆..."></textarea>
+      </div>
+      <div class="px-6 py-4 border-t border-stone-100 bg-stone-50 flex justify-end gap-3 flex-shrink-0">
+        <button onclick="closeAiReplyModal()" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">取消</button>
+        <button onclick="syncAiReplyAndClose()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">套用並還原</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 設定面板 Modal ==================== -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full">
+      <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50/50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-stone-800">系統設定與進階功能</h2>
+        <button onclick="closeSettings()" class="text-stone-400 hover:text-stone-600 font-medium text-lg">&times;</button>
+      </div>
+      
+      <div class="p-6 overflow-y-auto space-y-6">
+
+        <!-- 開源創作者資訊 -->
+        <div class="flex justify-end items-center gap-3 text-xs text-stone-500 pb-2 border-b border-stone-100/60">
+          <div>Author: <strong>OA</strong></div>
+          <span class="text-stone-300">|</span>
+          <a href="https://github.com/oas114/EduShield" target="_blank" rel="noopener noreferrer" class="hover:text-stone-800 transition-colors flex items-center gap-1.5 group">
+            <svg class="w-3.5 h-3.5 fill-current opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+            oas114/EduShield
+          </a>
+          <span class="text-stone-300">|</span>
+          <a href="https://ko-fi.com/oasgrow" target="_blank" rel="noopener noreferrer" class="hover:text-rose-600 transition-colors flex items-center gap-1 text-stone-500 font-medium group">
+            <svg class="w-3.5 h-3.5 text-rose-500 opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor"><path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.051-3.954-1.094-1.465-1.085-3.275.088-4.4C5.586 6.892 7.393 7.323 8.5 8.5c1.092-1.127 2.923-1.644 4.093-.457 1.157 1.17 1.157 3.238.226 4.416zm10.158 1.25c-.217 2.148-2.604 2.846-2.604 2.846s-1.424.037-2.658.077c.394-1.411.411-2.909.411-2.909l2.428-.016c.365-.008.572-.34.426-.642-.376-.842-1.348-1.054-1.348-1.054h-1.579c.006-.356.035-.717.035-1.082 0 0 1.258-.008 1.954-.037 1.343-.053 2.008-.946 2.008-.946 1.111-.806 1.09-2.571 1.09-2.571s-.027-1.107-1.098-1.595c-.868-.396-1.895-.296-1.895-.296h-1.666c-.053-.393-.111-.795-.178-1.189 0 0 3.328.067 4.15.539 1.637.935 1.542 2.502 1.542 2.502s.101 2.086-.889 3.21c0 0-.171.186-.184.186z"/></svg>
+            小額贊助
+          </a>
+        </div>
+        
+
+        <div class="space-y-3">
+          <h3 class="font-semibold text-sm text-stone-800">自訂詞庫 (CSV) 功能</h3>
+          <p class="text-xs text-stone-500 leading-relaxed">
+            系統支援批次匯入您的自訂關鍵字、人名、專案代號等。請下載範本，依據「關鍵字,類別」格式填寫後上傳。<strong>類別為選填</strong>，若不填寫將自動設為 CUSTOM。系統會根據類別自動產生對應代碼（例如：NAME_1, CUSTOM_1）。<br>
+            <span class="text-amber-700 font-medium">注意：關鍵字欄位值中不可含有逗號（,），否則將導致 CSV 解析錯誤。若詞彙本身含有逗號，請改用「線上建立詞庫」功能直接輸入。</span>
+          </p>
+          <div class="flex gap-2">
+            <button onclick="downloadCsvTemplate()" class="text-xs bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-2 rounded-md font-medium transition-colors border border-stone-200">
+              下載 CSV 範本
+            </button>
+            <button onclick="closeSettings(); openEditCsvModal();" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-md font-medium transition-colors border border-blue-200">
+              線上建立/擴充詞庫
+            </button>
+          </div>
+        </div>
+
+        <hr class="border-stone-100">
+
+        <div class="space-y-4">
+          <h3 class="font-semibold text-sm text-stone-800">地端 AI (Ollama) 連線設定</h3>
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 leading-relaxed">
+            <strong>尚未安裝 Ollama 嗎？</strong><br>
+            請先前往 <a href="https://ollama.com/download" target="_blank" class="underline font-bold text-blue-600 hover:text-blue-800">Ollama 官方網站下載</a> 並完成安裝。安裝後，請開啟命令提示字元 (CMD) 或 PowerShell 並輸入以下指令來安裝預設模型：<br>
+            <code class="block mt-1 bg-white border border-blue-200 px-2 py-1 rounded font-mono text-stone-800">ollama run qwen2.5:3b</code>
+          </div>
+
+          <!-- 說明與風險警告 -->
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 leading-relaxed">
+            <strong class="text-amber-900">為什麼需要這個設定？與潛在風險警告</strong><br>
+            Ollama 預設封鎖所有網頁的存取（安全保護機制）。需要在 Windows 中新增一個「環境變數」設定 <code>OLLAMA_ORIGINS</code> 為 <code>*</code>，告訴 Ollama 允許本機的 EduShield 網頁連線。<br><br>
+            <strong class="text-red-700">⚠️ 安全風險提示：</strong><br>
+            將來源設定為 <code>*</code> 代表允許任何網頁呼叫您的本地模型。雖然此設定僅影響您個人帳號且不需系統管理員權限，但仍存在遭其他惡意網頁濫用的風險。<br><br>
+            <strong>強烈建議您在未使用本系統時，將系統匣的 Ollama 完全關閉（Quit Ollama），或於使用完畢後刪除該環境變數。</strong>
+          </div>
+
+          <!-- 操作步驟 -->
+          <div class="space-y-4">
+            <p class="text-xs font-semibold text-stone-700">設定步驟（首次使用操作一次，之後每次開機自動生效）</p>
+            
+            <div class="space-y-4 text-xs text-stone-600">
+
+              <div class="flex gap-3 items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-stone-800 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">1</span>
+                <div>
+                  <p class="font-medium text-stone-700 mb-1">先關閉 Ollama</p>
+                  <p>在螢幕右下角<strong>系統匣</strong>（時鐘旁邊的小圖示區）找到 Ollama 羊駝圖示，對它按<strong>右鍵</strong>，選擇「<strong>Quit Ollama</strong>」完全關閉。</p>
+                </div>
+              </div>
+
+              <div class="flex gap-3 items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-stone-800 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">2</span>
+                <div>
+                  <p class="font-medium text-stone-700 mb-1">開啟 Windows「環境變數」設定視窗</p>
+                  <p>點擊 Windows<strong>開始選單</strong>，在搜尋框輸入「<strong>編輯您帳戶的環境變數</strong>」，點選出現的結果。</p>
+                  <p class="text-stone-400 mt-1">或按 <code class="bg-stone-100 px-1 rounded">Win + R</code>，輸入 <code class="bg-stone-100 px-1 rounded">sysdm.cpl</code> 後按 Enter，再點「進階」→「環境變數」。</p>
+                </div>
+              </div>
+
+              <div class="flex gap-3 items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-stone-800 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">3</span>
+                <div>
+                  <p class="font-medium text-stone-700 mb-1">在上半部「使用者變數」中新增一筆</p>
+                  <p>視窗分為上下兩個區域，請在<strong>上半部（您個人帳號的變數）</strong>點擊「<strong>新增(N)...</strong>」按鈕，並填入下列資料：</p>
+                  <div class="mt-2 bg-stone-50 border border-stone-200 rounded-lg overflow-hidden">
+                    <div class="flex items-center gap-3 px-3 py-2 border-b border-stone-200">
+                      <span class="text-stone-500 w-16 flex-shrink-0 font-medium">變數名稱</span>
+                      <code class="bg-white border border-stone-300 px-2 py-0.5 rounded font-mono text-stone-800">OLLAMA_ORIGINS</code>
+                    </div>
+                    <div class="flex items-start gap-3 px-3 py-2">
+                      <span class="text-stone-500 w-16 flex-shrink-0 font-medium mt-0.5">變數值</span>
+                      <code class="bg-white border border-stone-300 px-2 py-0.5 rounded font-mono text-stone-800 break-all leading-relaxed">*</code>
+                    </div>
+                  </div>
+                  <p class="text-stone-400 mt-2">輸入完成後按「確定」，再按一次「確定」關閉整個環境變數視窗。</p>
+                </div>
+              </div>
+
+              <div class="flex gap-3 items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-stone-800 text-white rounded-full flex items-center justify-center font-bold text-[10px] mt-0.5">4</span>
+                <div>
+                  <p class="font-medium text-stone-700 mb-1">重新啟動 Ollama</p>
+                  <p>從開始選單重新開啟 Ollama 應用程式，等系統匣出現羊駝圖示後，回到這裡按「<strong>測試連線</strong>」確認是否成功。</p>
+                </div>
+              </div>
+
+              <div class="flex gap-3 items-start bg-stone-50 border border-stone-200 rounded-lg p-3">
+                <span class="text-stone-400">↩</span>
+                <div>
+                  <p class="font-medium text-stone-700 mb-0.5">日後如何取消這個設定？</p>
+                  <p class="text-stone-500">重複步驟 2 開啟環境變數視窗，在上半部「使用者變數」中找到 <code class="bg-stone-100 px-1 rounded font-mono">OLLAMA_ORIGINS</code> 這一筆，選取後按「<strong>刪除(D)</strong>」，重啟 Ollama 即完全還原。</p>
+                </div>
+              </div>
+
+              <div class="flex gap-3 items-start bg-stone-50 border border-stone-200 rounded-lg p-3">
+                <span class="text-stone-400 font-bold text-xs mt-0.5">i</span>
+                <div>
+                  <p class="font-medium text-stone-700 mb-0.5">如何防止 Ollama 開機自動啟動？</p>
+                  <p class="text-stone-500">提醒：可至工作管理員 (於工作列按右鍵) > 「啟動應用程式」分頁 > 找到 Ollama 並設為「停用」，使其不會於開機時自動在背景啟動。</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <hr class="border-stone-100">
+
+          <!-- API 設定 -->
+          <div class="space-y-2">
+            <p class="text-xs font-semibold text-stone-700">環境與操作設定</p>
+            <div>
+              <label class="block text-xs text-stone-500 mb-1">API 網址</label>
+              <input type="text" id="ollamaUrl" value="http://localhost:11434" class="w-full text-sm p-2 bg-white border border-stone-300 rounded-md focus:ring-1 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-stone-500 mb-1">模型名稱</label>
+              <select id="ollamaModelSelect" onchange="toggleCustomModel()" class="w-full text-sm p-2 bg-white border border-stone-300 rounded-md focus:ring-1 focus:ring-blue-500 outline-none">
+                <option value="qwen2.5:3b" selected>qwen2.5:3b (目前預設)</option>
+                <option value="qwen2.5:1.5b">qwen2.5:1.5b</option>
+                <option value="llama3.1">llama3.1</option>
+                <option value="custom">自選 (自訂輸入)</option>
+              </select>
+              <input type="text" id="ollamaModel" value="qwen2.5:3b" class="hidden mt-2 w-full text-sm p-2 bg-white border border-stone-300 rounded-md focus:ring-1 focus:ring-blue-500 outline-none" placeholder="請輸入模型名稱">
+              <p class="text-[10px] text-stone-400 mt-1">※ 請確認已透過 Ollama 下載該模型。開發者可於原始碼 (EduShield.html) 中直接修改這些預設選項。</p>
+            </div>
+            <button onclick="testOllamaConnection()" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-md font-medium transition-colors border border-blue-200">
+              測試連線
+            </button>
+            <div id="ollamaTestResult" class="text-xs mt-1 hidden"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 個資規則指南 Modal ==================== -->
+  <div id="guideModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full">
+      <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-stone-50/50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-stone-800">教育隱私保護規則指南</h2>
+        <button onclick="closeGuide()" class="text-stone-400 hover:text-stone-600 font-medium text-lg">&times;</button>
+      </div>
+      
+      <div class="p-6 overflow-y-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <p class="text-sm text-stone-600">
+            為落實教育場域之隱私保護，系統內建了多種正規表示式 (Regex) 與字典來辨識師生敏感資訊。以下是系統目前的偵測規則與對應標籤，提供給教育工作者學習與參考：
+          </p>
+          <button onclick="toggleGuideInstructions()" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded text-xs font-semibold transition-colors whitespace-nowrap">
+            規則修改指南
+          </button>
+        </div>
+
+        <div id="guideInstructions" class="hidden bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4 text-xs text-stone-700 leading-relaxed space-y-2">
+          <p class="font-bold text-stone-800 text-sm">如何自行修改個資規則與硬阻斷詞彙？</p>
+          <p>由於瀏覽器的安全限制，您無法直接在網頁上點擊儲存來修改這個 HTML 檔案。但是，您可以非常輕易地手動修改它：</p>
+          <ol class="list-decimal list-inside space-y-1 ml-1 text-stone-600">
+            <li>對著這個 <code class="bg-white border border-stone-200 px-1 rounded">本系統的 HTML</code> 檔案按右鍵。</li>
+            <li>選擇「開啟檔案」 -> 選擇「記事本 (Notepad)」或是「VS Code」。</li>
+            <li>使用搜尋功能 (Ctrl+F) 尋找 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">HARD_BLOCK_KEYWORDS</code> 或 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">REGEX_RULES</code>。</li>
+            <li>直接在括號中照著格式新增您的詞彙、範例或正規表示式。</li>
+            <li>存檔 (Ctrl+S) 後，重新整理這個網頁 (F5) 即可立刻看到您修改的成果！</li>
+          </ol>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="border border-stone-200 rounded-lg overflow-hidden">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-stone-50 text-stone-600 border-b border-stone-200">
+                <tr>
+                  <th class="px-4 py-2 font-medium w-1/6">資料類別</th>
+                  <th class="px-4 py-2 font-medium w-1/6">替換標籤</th>
+                  <th class="px-4 py-2 font-medium w-1/4">範例</th>
+                  <th class="px-4 py-2 font-medium w-5/12">正規表示式 (Regex)</th>
+                </tr>
+              </thead>
+              <tbody id="guideTableBody" class="divide-y divide-stone-100 text-stone-700">
+                <!-- 動態由 JS 產生 -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+            <h4 class="text-sm font-bold text-red-700 mb-1">校園極敏感資訊 (硬阻斷)</h4>
+            <p class="text-xs text-red-600">
+              若教育現場原始資料包含以下詞彙，將觸發法定教育隱私與特種個資保護，鎖定複製功能嚴禁外流：<br>
+              <span id="guideHardBlockList" class="font-medium text-red-700 leading-relaxed"></span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 解鎖提示 Modal ==================== -->
+  <div id="unlockModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-red-200">
+      <div class="px-6 py-4 border-b border-red-100 flex justify-between items-center bg-red-50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-red-800 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          特敏資訊阻斷警告
+        </h2>
+        <button onclick="closeUnlockModal()" class="text-red-400 hover:text-red-600 font-medium text-lg">&times;</button>
+      </div>
+      
+      <div class="p-6 overflow-y-auto space-y-4">
+        <p class="text-sm text-stone-700">系統偵測到本文可能包含校園極敏感資訊，為保護學生與當事人隱私，已暫時鎖定複製與外流功能。</p>
+        
+        <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+          <h3 class="text-xs font-bold text-stone-500 mb-2 uppercase tracking-wider">阻斷原因</h3>
+          <ul id="unlockReasonList" class="list-disc list-inside text-sm text-stone-800 space-y-1.5 font-medium">
+            <!-- 動態插入 -->
+          </ul>
+        </div>
+
+        <p class="text-xs text-stone-500 leading-relaxed mt-4">
+          如果您確認這些資訊可以安全釋出，或者判定為系統/AI誤判，您可以強制解除鎖定。
+        </p>
+      </div>
+
+      <div class="px-6 py-4 border-t border-stone-100 bg-stone-50 flex justify-end gap-3">
+        <button onclick="closeUnlockModal()" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">
+          保持鎖定 (安全)
+        </button>
+        <button onclick="confirmUnlock()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2">
+          我確認無風險，解除鎖定
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ==================== 線上建立詞庫 Modal ==================== -->
+  <div id="editCsvModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-stone-200">
+      <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-blue-50/50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-blue-900">自訂詞庫管理 (檢視 / 編輯 / 建立)</h2>
+        <button onclick="closeEditCsvModal()" class="text-stone-400 hover:text-stone-600 font-medium text-lg">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 bg-white space-y-4">
+        <div class="flex flex-col gap-3">
+          <div class="flex justify-between items-end">
+            <p class="text-xs text-stone-500">
+              您可以在下方直接輸入資料，或<strong class="text-stone-700">直接從 Excel 複製兩欄資料並貼上到任一格</strong>，系統會自動擴展表格。<br>
+              不需要的列可以留空，套用時會自動忽略。
+            </p>
+            <button onclick="addCsvEditRow()" class="text-xs bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded font-medium transition-colors border border-stone-200">
+              + 手動新增一列
+            </button>
+          </div>
+          <div class="flex gap-3 bg-stone-50 p-2 rounded-lg border border-stone-200">
+            <input type="text" id="csvFilterKw" oninput="filterCsvEditRows()" placeholder="篩選關鍵字..." class="w-1/2 text-sm p-1.5 border border-stone-300 rounded focus:outline-none focus:border-blue-500 bg-white">
+            <input type="text" id="csvFilterType" oninput="filterCsvEditRows()" placeholder="篩選類別..." class="w-1/2 text-sm p-1.5 border border-stone-300 rounded focus:outline-none focus:border-blue-500 bg-white">
+          </div>
+        </div>
+        
+        <div class="border border-stone-200 rounded-lg overflow-hidden">
+          <table class="w-full text-left text-sm" id="csvEditTable">
+            <thead class="bg-stone-50">
+              <tr>
+                <th class="px-3 py-2 font-medium text-stone-600 w-12 text-center border-b border-r border-stone-200">#</th>
+                <th class="px-3 py-2 font-medium text-stone-600 w-1/2 border-b border-r border-stone-200">關鍵字 (必填)</th>
+                <th class="px-3 py-2 font-medium text-stone-600 w-1/3 border-b border-r border-stone-200">類別 (選填，如 NAME)</th>
+                <th class="px-3 py-2 font-medium text-stone-600 w-16 border-b border-stone-200 text-center">刪除</th>
+              </tr>
+            </thead>
+            <tbody id="csvEditTbody" class="divide-y divide-stone-200 bg-white">
+              <!-- 預設 5 列 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-stone-100 bg-stone-50 flex justify-end gap-3 flex-shrink-0">
+        <button onclick="downloadOnlineCsv()" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          下載成 CSV
+        </button>
+        <button onclick="applyOnlineCsv()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2">
+          直接套用至系統
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== 全域提示框 ==================== -->
+  <div id="globalTooltip" class="fixed z-[100] px-2 py-1 bg-stone-800 text-white text-[10px] rounded whitespace-nowrap shadow-lg pointer-events-none transition-opacity duration-150 opacity-0 hidden"></div>
+
+  <script>
+    // ==========================================
+    // 狀態與基礎設定
+    // ==========================================
+    function escapeHtml(unsafe) {
+      return (unsafe || "").toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    let customDict = []; // Array of { type, value }
+    let whitelist = new Set();
+    let sessionVault = {}; 
+    let reportData = [];
+    let debounceTimer;
+    let activeExtractedEntities = []; 
+    let tableMasks = new Set(); // Stores "lineIndex_colIndex"
+    let rawAnonymizedText = ""; // 儲存已替換為 token 的文字供第二階段使用
+
+    // ==========================================
+    // 提示框與對照功能
+    // ==========================================
+    function showGlobalTooltip(e, text) {
+      const gt = document.getElementById("globalTooltip");
+      gt.innerText = text;
+      gt.style.left = (e.clientX) + "px";
+      gt.style.top = (e.clientY - 30) + "px";
+      gt.classList.remove("hidden", "opacity-0");
+    }
+    function hideGlobalTooltip() {
+      const gt = document.getElementById("globalTooltip");
+      gt.classList.add("opacity-0");
+      setTimeout(() => { if (gt.classList.contains("opacity-0")) gt.classList.add("hidden"); }, 150);
+    }
+    function highlightEntityChip(val, isHover) {
+      // 1. 同步左側原始資料輸入區塊的高亮
+      document.querySelectorAll(`mark[data-entity-val="${val}"]`).forEach(m => {
+        if (isHover) m.classList.add('highlight-active');
+        else m.classList.remove('highlight-active');
+      });
+      // 2. 同步左下角偵測項目膠囊
+      document.querySelectorAll(`[data-entity-chip="${val}"]`).forEach(chip => {
+        if (isHover) chip.classList.add('ring-2', 'ring-blue-500', 'scale-105', 'z-10', 'relative');
+        else chip.classList.remove('ring-2', 'ring-blue-500', 'scale-105', 'z-10', 'relative');
+      });
+      // 3. 同步右側遮蔽項目明細並滾動
+      document.querySelectorAll(`[data-report-row="${val}"]`).forEach(row => {
+        if (isHover) {
+          row.classList.add('bg-blue-50');
+          row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          row.classList.remove('bg-blue-50');
+        }
+      });
+    }
+    function highlightCrossReference(token, isHover) {
+      document.querySelectorAll('[data-token]').forEach(el => {
+        if (el.getAttribute('data-token') !== token) return;
+        if (isHover) {
+          el.classList.add("ring-2", "ring-blue-500", "scale-105", "z-10", "relative");
+        } else {
+          el.classList.remove("ring-2", "ring-blue-500", "scale-105", "z-10", "relative");
+        }
+      });
+    }
+
+    // 在此陣列中加入您的自訂硬阻斷關鍵字，例如: "特定詞彙", "另一個詞彙"
+    const HARD_BLOCK_KEYWORDS = [
+      "自閉症", "鑑輔會", "性平通報", "性騷擾", "性侵害", "家暴", "家庭暴力", "保護管束", "心理諮商紀錄", "特教身分", "身心障礙手冊", "身心障礙證明", "重大傷病", "自傷", "低收入戶證明",
+      "個別化教育計畫", "IEP", "心評報告", "輔導晤談", "高關懷個案", "學諮中心", "自我傷害", "自傷舉動", "家暴通報", "兒少保護", "緊急安置", "性平會", "專案調查小組", "中低收入戶", "弱勢助學補助", "弱勢助學", "就學貸款",
+      "特教與身心障礙", "心理輔導與諮商", "兒少保護與家暴事件", "性別平等事件", "特殊經濟弱勢"
+    ];
+    
+    // 若要新增正規表示式，請依此格式新增物件： { type: "標籤名", regex: /您的正規表示式/g, name: "中文名稱", example: "偵測範例" }
+    const REGEX_RULES = [
+      // 1. 身份識別、日期與通訊資料
+      { type: "ID_CARD", regex: /[A-Z][12]\d{8}/g, name: "身分證字號", example: "A123456789" },
+      { type: "ARC_ID", regex: /[A-Z][A-D89]\d{8}/g, name: "居留證號", example: "A800000014" },
+      { type: "ROC_DATE", regex: /(?:民國\s*)?(\d{2,3})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?/g, name: "民國日期", example: "民國112年8月15日" },
+      { type: "ROC_DATE_NUM", regex: /\b\d{2,3}[\/.-]\d{1,2}[\/.-]\d{1,2}\b/g, name: "民國日期(數)", example: "112/08/15" },
+      { type: "DATE", regex: /\b(19\d{2}|20\d{2})[-/.年]\s*(0?[1-9]|1[0-2])[-/.月]\s*(0?[1-9]|[12]\d|3[01])日?\b/g, name: "西元日期", example: "2026/08/19" },
+      { type: "PHONE", regex: /09\d{2}-?\d{3}-?\d{3}/g, name: "行動電話", example: "0912-345-678" },
+      { type: "TEL", regex: /0\d{1,2}-?\d{7,8}(?:\s*(?:#|分機|ext\.?)\s*\d{1,5})?/gi, name: "市話/分機", example: "02-23456789#123" },
+      { type: "EMAIL", regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, name: "電子郵件", example: "user@mail.edu.tw" },
+      { type: "ADDRESS", regex: /(?:\d{3,6}\s*)?(?:(?:[臺台][北中南東]|新北|桃園|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|[臺台]東|澎湖|金門|連江)[縣市])(?:[\u4e00-\u9fa5]{2,4}[區市鎮鄉])(?:[\u4e00-\u9fa5]{1,10}[路街道段區里村])(?:\d+巷)?(?:\d+弄)?(?:\d+號)(?:之\d+)?(?:\d+樓)?/g, name: "台灣戶籍/通訊地址", example: "406 台中市北屯區崇德路三段100號" },
+      
+      // 2. 學校教務、學籍與成績評量
+      { type: "STUDENT_ID", regex: /\b\d{9}\b/g, name: "學生學號", example: "112001001" },
+      { type: "DEPT_CLASS", regex: /(?:[\u4e00-\u9fa5]{2,10}(?:學系|學院|學程|研究所))|(?:[一二三四五六七1-7]年)?[A-Za-z甲乙丙丁戊己庚辛]\s*班/g, name: "系所與班級", example: "資訊工程學系、一年A班" },
+      { type: "SCORE", regex: /\b(?:100(?:\.0+)?|[1-9]?\d(?:\.\d+)?)\s*分/g, name: "評量成績分數", example: "85.5分" },
+      { type: "RANK", regex: /(?:全[校系班級]\s*)?第\s*\d+\s*名/g, name: "名次與排名", example: "全系第 3 名" },
+      { type: "PR", regex: /\bPR\s*\d{1,2}\b/gi, name: "百分位數(PR值)", example: "PR 92" },
+      { type: "DISCIPLINE", regex: /(?:予以)?(?:警告|大過|小過|小功|大功|嘉獎)\s*[一二三兩1-3]\s*(?:次|支)/g, name: "學生獎懲事由", example: "警告一次" },
+
+      // 3. 教職人事、總務採購與經費
+      { type: "TITLE", regex: /(?:副?校長|(?:教務|學務|總務|研發|國際|進修|實習)長|(?:教務|學務|學生|總務|輔導|人事|會計|圖書(?:館)?|資訊|進修|科|學年|班)?(?:主任|組長|幹事)|(?:輔導|專任|兼任|代課|代理|實習|資源班|特教)?(?:老師|教師|導師)|(?:主任)?教官|校安人員|秘書|護理師|校醫|警衛|工友)/g, name: "學校職稱/行政稱謂", example: "學務主任" },
+      { type: "FORM_NUM", regex: /\b\d{8}\b/g, name: "表單案號", example: "12345678" },
+      { type: "DOC_NUM", regex: /\b[A-Z]\d{10}\b/g, name: "公文字號", example: "A1234567890" },
+      { type: "VENDOR", regex: /[\u4e00-\u9fa5a-zA-Z0-9]+(?:股份有限公司|有限公司|企業社|工作室|商行)/g, name: "投標/得標廠商名稱", example: "台灣資訊股份有限公司" },
+      { type: "AMOUNT", regex: /(?:(?:NT\$|\$)\s*\d{1,3}(?:,\d{3})*(?:\.\d+)?)|(?:\b\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*(?:元|萬元|千元))/g, name: "經費預算/核銷金額", example: "1,250,000 元" }
+    ];
+
+    // ==========================================
+    // UI 控制與頁籤切換
+    // ==========================================
+    function switchTab(tabId) {
+      document.getElementById('viewPhase1').classList.toggle('hidden', tabId !== 1);
+      document.getElementById('viewPhase2').classList.toggle('hidden', tabId !== 2);
+
+      const activeCls = ['bg-white', 'shadow-sm', 'text-blue-600', 'font-semibold'];
+      const inactiveCls = ['text-stone-500', 'font-medium', 'hover:text-stone-700'];
+
+      const btns = [document.getElementById('tabBtn1'), document.getElementById('tabBtn2')];
+
+      btns.forEach((btn, idx) => {
+        if(!btn) return;
+        if ((idx + 1) === tabId) {
+          btn.classList.add(...activeCls);
+          btn.classList.remove(...inactiveCls);
+        } else {
+          btn.classList.remove(...activeCls);
+          btn.classList.add(...inactiveCls);
+        }
+      });
+
+      if(tabId === 2) {
+        // 問題④：切換頁籤時重置報復區高度，避免上次執行還原後殘留 60px
+        document.getElementById('aiReplyInput').style.height = '';
+        renderOriginalWithCapsules([]);
+        renderRestoreChips();
+      }
+    }
+
+    function openModal(id) {
+      const m = document.getElementById(id);
+      m.classList.remove('hidden');
+      setTimeout(() => { m.classList.remove('opacity-0'); m.querySelector('div').classList.remove('scale-95'); }, 10);
+    }
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95');
+      setTimeout(() => m.classList.add('hidden'), 300);
+    }
+
+    function openSettings() { openModal('settingsModal'); }
+    function closeSettings() { closeModal('settingsModal'); }
+    function openGuide() { 
+      const tbody = document.getElementById("guideTableBody");
+      tbody.innerHTML = REGEX_RULES.map(rule => `
+        <tr>
+          <td class="px-4 py-2">${rule.name}</td>
+          <td class="px-4 py-2 font-mono text-xs">${rule.type}_X</td>
+          <td class="px-4 py-2 text-stone-500">${rule.example || ''}</td>
+          <td class="px-4 py-2 font-mono text-[10px] break-all">${escapeHtml(rule.regex.toString())}</td>
+        </tr>
+      `).join('');
+      document.getElementById("guideHardBlockList").innerText = HARD_BLOCK_KEYWORDS.join("、");
+      openModal('guideModal'); 
+    }
+    function closeGuide() { closeModal('guideModal'); }
+    function toggleGuideInstructions() {
+      document.getElementById('guideInstructions').classList.toggle('hidden');
+    }
+
+    function openUnlockModal() { openModal('unlockModal'); }
+    function closeUnlockModal() { closeModal('unlockModal'); }
+    function resetHardBlockState() {
+      document.getElementById("hardBlockBanner").classList.add("hidden");
+      document.getElementById("copyPromptBtn").disabled = false;
+      const outputArea = document.getElementById("anonymizedOutput");
+      outputArea.disabled = false;
+      outputArea.classList.remove("pointer-events-none", "select-none", "opacity-50", "cursor-not-allowed");
+    }
+
+    function confirmUnlock() {
+      resetHardBlockState();
+      closeUnlockModal();
+    }
+    
+    function triggerHardBlock(reasons) {
+      const banner = document.getElementById("hardBlockBanner");
+      const list = document.getElementById("unlockReasonList");
+      const copyBtn = document.getElementById("copyPromptBtn");
+      const outputArea = document.getElementById("anonymizedOutput");
+      
+      banner.classList.remove("hidden");
+      copyBtn.disabled = true;
+      outputArea.disabled = true;
+      outputArea.classList.add("pointer-events-none", "select-none", "opacity-50", "cursor-not-allowed");
+      
+      list.innerHTML = reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('');
+    }
+
+    // ==========================================
+    // AI 回覆編輯與剪貼簿功能
+    // ==========================================
+    function openAiReplyModal() {
+      document.getElementById("aiReplyInputLarge").value = document.getElementById("aiReplyInput").value;
+      openModal("aiReplyModal");
+    }
+    function closeAiReplyModal() { closeModal("aiReplyModal"); }
+    function syncAiReplyAndClose() {
+      document.getElementById("aiReplyInput").value = document.getElementById("aiReplyInputLarge").value;
+      closeAiReplyModal();
+      processRestore();
+    }
+    async function pasteFromClipboard(isLarge = false) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (isLarge) {
+          document.getElementById("aiReplyInputLarge").value = text;
+        } else {
+          document.getElementById("aiReplyInput").value = text;
+        }
+      } catch (err) {
+        alert("無法讀取剪貼簿，請確認瀏覽器已允許剪貼簿讀取權限，或直接使用 Ctrl+V 貼上。");
+      }
+    }
+
+    // ==========================================
+    // CSV 詞庫功能與線上建立/檢視
+    // ==========================================
+    
+    let editCsvRowCount = 0;
+    function createEditRow(keyword = '', type = '') {
+      editCsvRowCount++;
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-stone-50/50 transition-colors group";
+      tr.innerHTML = `
+        <td class="px-3 py-1.5 text-center text-stone-400 font-mono text-xs border-r border-stone-100">${editCsvRowCount}</td>
+        <td class="px-3 py-1.5 border-r border-stone-100">
+          <input type="text" class="csv-kw-input w-full p-1.5 bg-transparent border border-transparent focus:border-blue-300 focus:bg-white rounded outline-none transition-all" value="${escapeHtml(keyword)}" placeholder="請輸入關鍵字">
+        </td>
+        <td class="px-3 py-1.5 border-r border-stone-100">
+          <input type="text" class="csv-type-input w-full p-1.5 bg-transparent border border-transparent focus:border-blue-300 focus:bg-white rounded outline-none transition-all font-mono text-xs uppercase" value="${escapeHtml(type)}" placeholder="例如 NAME">
+        </td>
+        <td class="px-3 py-1.5 text-center">
+          <button onclick="handleCsvDeleteRow(this)" class="csv-delete-btn text-stone-400 hover:text-red-600 focus:text-red-600 focus:bg-red-50 focus:outline-none transition-colors rounded p-1" title="刪除此列">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </td>
+      `;
+      // Paste listener for Excel
+      const kwInput = tr.querySelector('.csv-kw-input');
+      const typeInput = tr.querySelector('.csv-type-input');
+      kwInput.addEventListener('paste', handleCsvPaste);
+      typeInput.addEventListener('paste', handleCsvPaste);
+      
+      // Keyboard navigation listener
+      kwInput.addEventListener('keydown', handleCsvKeydown);
+      typeInput.addEventListener('keydown', handleCsvKeydown);
+      const delBtn = tr.querySelector('.csv-delete-btn');
+      delBtn.addEventListener('keydown', handleCsvKeydown);
+      
+      return tr;
+    }
+    
+    function addCsvEditRow(k='', t='') {
+      document.getElementById('csvEditTbody').appendChild(createEditRow(k, t));
+    }
+    
+    function reindexCsvEditRows() {
+      const rows = document.querySelectorAll('#csvEditTbody tr');
+      editCsvRowCount = rows.length;
+      let visibleIdx = 1;
+      rows.forEach(tr => {
+        const numCell = tr.querySelector('td:first-child');
+        // 問題⑩：僅對可見列重編號，被 filter 隱藏的列保留原序號不更新
+        if (tr.style.display !== 'none') {
+          numCell.innerText = visibleIdx++;
+        }
+      });
+    }
+    
+    function handleCsvDeleteRow(btn) {
+      const tr = btn.closest('tr');
+      
+      // 在刪除前先找出下一列（若是最後一列則找上一列），用於轉移焦點
+      let targetTr = tr.nextElementSibling;
+      while (targetTr && targetTr.style.display === 'none') {
+        targetTr = targetTr.nextElementSibling; // 跳過被 filter 隱藏的列
+      }
+      if (!targetTr) {
+        targetTr = tr.previousElementSibling;
+        while (targetTr && targetTr.style.display === 'none') {
+          targetTr = targetTr.previousElementSibling;
+        }
+      }
+      
+      tr.remove();
+      reindexCsvEditRows();
+      
+      if (targetTr) {
+        const nextBtn = targetTr.querySelector('.csv-delete-btn');
+        if (nextBtn) nextBtn.focus();
+      }
+    }
+    
+    function filterCsvEditRows() {
+      const filterKw = document.getElementById('csvFilterKw').value.toLowerCase();
+      const filterType = document.getElementById('csvFilterType').value.toLowerCase();
+      const rows = document.querySelectorAll('#csvEditTbody tr');
+      
+      rows.forEach(tr => {
+        const kw = tr.querySelector('.csv-kw-input').value.toLowerCase();
+        const type = tr.querySelector('.csv-type-input').value.toLowerCase();
+        if (kw.includes(filterKw) && type.includes(filterType)) {
+          tr.style.display = '';
+        } else {
+          tr.style.display = 'none';
+        }
+      });
+      reindexCsvEditRows();
+    }
+    
+    function openEditCsvModal() {
+      const tbody = document.getElementById('csvEditTbody');
+      tbody.innerHTML = '';
+      editCsvRowCount = 0;
+      
+      if (customDict && customDict.length > 0) {
+        customDict.forEach(item => addCsvEditRow(item.value, item.type));
+      } else {
+        for(let i=0; i<5; i++) addCsvEditRow();
+      }
+      
+      // Reset filters
+      document.getElementById('csvFilterKw').value = '';
+      document.getElementById('csvFilterType').value = '';
+      filterCsvEditRows();
+      
+      openModal("editCsvModal");
+    }
+    function closeEditCsvModal() { closeModal("editCsvModal"); }
+    
+    function handleCsvKeydown(e) {
+      const input = e.target;
+      const isKw = input.classList.contains('csv-kw-input');
+      const isType = input.classList.contains('csv-type-input');
+      const isDelete = input.classList.contains('csv-delete-btn');
+      if (!isKw && !isType && !isDelete) return;
+      
+      const tr = input.closest('tr');
+      if (!tr) return;
+      
+      let targetInput = null;
+      
+      if (e.key === 'ArrowDown') {
+        let nextTr = tr.nextElementSibling;
+        while (nextTr && nextTr.style.display === 'none') {
+          nextTr = nextTr.nextElementSibling;
+        }
+        if (nextTr) {
+          targetInput = nextTr.querySelector(isKw ? '.csv-kw-input' : isType ? '.csv-type-input' : '.csv-delete-btn');
+        }
+      } else if (e.key === 'ArrowUp') {
+        let prevTr = tr.previousElementSibling;
+        while (prevTr && prevTr.style.display === 'none') {
+          prevTr = prevTr.previousElementSibling;
+        }
+        if (prevTr) {
+          targetInput = prevTr.querySelector(isKw ? '.csv-kw-input' : isType ? '.csv-type-input' : '.csv-delete-btn');
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (isKw && input.selectionStart === input.value.length) {
+          targetInput = tr.querySelector('.csv-type-input');
+        } else if (isType && input.selectionStart === input.value.length) {
+          targetInput = tr.querySelector('.csv-delete-btn');
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (isType && input.selectionEnd === 0) {
+          targetInput = tr.querySelector('.csv-kw-input');
+        } else if (isDelete) {
+          targetInput = tr.querySelector('.csv-type-input');
+        }
+      }
+      
+      if (targetInput) {
+        e.preventDefault();
+        targetInput.focus();
+      }
+    }
+    
+    function handleCsvPaste(e) {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text');
+      if (!paste) return;
+      
+      const lines = paste.split(/\r\n|\n/).filter(l => l.trim() !== '');
+      if (lines.length === 0) return;
+      
+      const targetInput = e.target;
+      const isTypeCol = targetInput.classList.contains('csv-type-input');
+      const targetTr = targetInput.closest('tr');
+      let currentRow = targetTr;
+      
+      lines.forEach((line, idx) => {
+        const parts = line.split('\t');
+        
+        // 如果只有一欄資料，且使用者是點擊在 type 欄位，就當作是只貼上 type
+        const pastingOnlyType = isTypeCol && parts.length === 1;
+        
+        let kw = '', type = '';
+        if (pastingOnlyType) {
+          type = parts[0] ? parts[0].trim() : '';
+        } else {
+          kw = parts[0] ? parts[0].trim() : '';
+          type = parts[1] ? parts[1].trim() : '';
+        }
+        
+        if (currentRow) {
+          if (pastingOnlyType) {
+            currentRow.querySelector('.csv-type-input').value = type;
+          } else {
+            currentRow.querySelector('.csv-kw-input').value = kw;
+            if (parts.length > 1 || type) {
+              currentRow.querySelector('.csv-type-input').value = type;
+            }
+          }
+          currentRow = currentRow.nextElementSibling;
+        } else {
+          if (pastingOnlyType) {
+            addCsvEditRow('', type);
+          } else {
+            addCsvEditRow(kw, type);
+          }
+        }
+      });
+    }
+    
+    function getOnlineCsvData() {
+      const rows = document.querySelectorAll('#csvEditTbody tr');
+      const data = [];
+      rows.forEach(tr => {
+        const kw = tr.querySelector('.csv-kw-input').value.trim();
+        const type = tr.querySelector('.csv-type-input').value.trim().toUpperCase();
+        if (kw) data.push({ kw, type });
+      });
+      return data;
+    }
+    
+    function applyOnlineCsv() {
+      const data = getOnlineCsvData();
+      if (data.length === 0) {
+        alert("表格為空或沒有輸入任何關鍵字！");
+        return;
+      }
+      
+      customDict = [];
+      data.forEach(item => {
+        customDict.push({ type: item.type || 'CUSTOM', value: item.kw, reason: "線上建立詞庫" });
+      });
+      
+      document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
+      alert(`成功套用 ${customDict.length} 筆自訂詞庫！`);
+      closeEditCsvModal();
+      triggerPreview();
+    }
+    
+    function downloadOnlineCsv() {
+      const data = getOnlineCsvData();
+      if (data.length === 0) {
+        alert("表格為空，沒有資料可以匯出！");
+        return;
+      }
+      
+      let csvContent = "\uFEFF關鍵字,類別(選填)\n";
+      data.forEach(item => {
+        csvContent += `"${item.kw.replace(/"/g, '""')}",${item.type}\n`;
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "EduShield_自訂詞庫.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function handleCsvUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
+        customDict = [];
+        
+        const firstLine = lines[0].split(',');
+        let startIdx = 0;
+        if (firstLine[0] && firstLine[0].trim().includes('關鍵字')) {
+            startIdx = 1;
+        }
+
+        for (let i = startIdx; i < lines.length; i++) {
+            const parts = lines[i].split(',');
+            let val = parts[0] ? parts[0].trim() : '';
+            if (val.startsWith('"') && val.endsWith('"') && val.length >= 2) {
+                val = val.substring(1, val.length - 1).replace(/""/g, '"');
+            }
+            if (val) {
+                const type = (parts[1] && parts[1].trim()) ? parts[1].trim().toUpperCase() : 'CUSTOM';
+                customDict.push({ type, value: val, reason: "自訂詞庫" });
+            }
+        }
+        
+        document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
+        alert(`成功載入 ${customDict.length} 筆自訂詞庫！`);
+        triggerPreview();
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadCsvTemplate() {
+      const csvContent = "\uFEFF關鍵字,類別(選填)\n陳小明,NAME\n機密專案A,PROJECT\n台灣資訊公司,VENDOR\n無名氏,";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "EduShield_自訂詞庫.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function testOllamaConnection() {
+      const url = document.getElementById('ollamaUrl').value.trim();
+      const model = (document.getElementById('ollamaModelSelect').value === 'custom') 
+                    ? document.getElementById('ollamaModel').value.trim() 
+                    : document.getElementById('ollamaModelSelect').value;
+      const resultEl = document.getElementById('ollamaTestResult');
+      resultEl.classList.remove('hidden', 'text-emerald-600', 'text-red-600', 'text-amber-600');
+      resultEl.classList.add('text-blue-600');
+      resultEl.innerText = "測試連線中...";
+
+      try {
+        const res = await fetch(`${url}/api/tags`);
+        if (res.ok) {
+          const data = await res.json();
+          const hasModel = data.models && data.models.some(m => m.name === model || m.name === model+':latest' || m.name.startsWith(model+':'));
+          if (hasModel) {
+            resultEl.classList.replace('text-blue-600', 'text-emerald-600');
+            resultEl.innerText = "✅ 連線成功！";
+          } else {
+            resultEl.classList.replace('text-blue-600', 'text-amber-600');
+            resultEl.innerText = `⚠️ 連線成功，但找不到模型 [${model}]，請確認已執行 pull 指令。`;
+          }
+        } else {
+          throw new Error("HTTP Failed");
+        }
+      } catch (e) {
+        resultEl.classList.replace('text-blue-600', 'text-red-600');
+        resultEl.innerText = "❌ 連線失敗。請確認 Ollama 已啟動，且已設定 CORS 環境變數。";
+      }
+    }
+
+    function toggleCustomModel() {
+      const select = document.getElementById("ollamaModelSelect");
+      const input = document.getElementById("ollamaModel");
+      if (select.value === "custom") {
+        input.classList.remove("hidden");
+        if (["qwen2.5:3b", "qwen2.5:1.5b", "llama3.1"].includes(input.value)) {
+           input.value = "";
+        }
+      } else {
+        input.classList.add("hidden");
+        input.value = select.value;
+      }
+    }
+
+    // ==========================================
+    // 高亮輸入框與選取邏輯
+    // ==========================================
+    const textarea = document.getElementById('rawInput');
+    const backdrop = document.getElementById('backdrop');
+
+    textarea.addEventListener('scroll', () => {
+      backdrop.scrollTop = textarea.scrollTop;
+      backdrop.scrollLeft = textarea.scrollLeft;
+    });
+
+    textarea.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { triggerPreview(); }, 200);
+    });
+
+    // 問題③：移除重複定義的 escapeHtml（第二個只處理3種字元，覆蓋了第一個完整版本）
+    // 第一個 escapeHtml 定義（L619）已處理5種字元，保留該版本並移除此處的重複版
+
+    function renderRange(text, start, end) {
+      const rangeEntities = activeExtractedEntities.filter(e => e.start < end && e.end > start);
+      if (rangeEntities.length === 0) return escapeHtml(text.substring(start, end));
+      
+      let rangeHtml = '';
+      let cursor = start;
+      rangeEntities.forEach(ent => {
+        if (cursor < ent.start) {
+          rangeHtml += escapeHtml(text.substring(cursor, ent.start));
+          cursor = ent.start;
+        }
+        const overlapStart = Math.max(cursor, ent.start);
+        const overlapEnd = Math.min(end, ent.end);
+        if (overlapStart < overlapEnd) {
+          let markClass = '';
+          if (ent.isCritical) markClass = 'highlight-critical';
+          else if (ent.isAi) markClass = 'highlight-ai';
+          rangeHtml += `<mark class="${markClass}" data-entity-val="${escapeHtml(ent.value)}">${escapeHtml(text.substring(overlapStart, overlapEnd))}</mark>`;
+          cursor = overlapEnd;
+        }
+      });
+      if (cursor < end) {
+        rangeHtml += escapeHtml(text.substring(cursor, end));
+      }
+      return rangeHtml;
+    }
+
+    function renderHighlights() {
+      const text = textarea.value;
+      if (!text) { backdrop.innerHTML = ''; return; }
+
+      let html = '';
+      let globalCursor = 0;
+      const lines = text.split('\n');
+
+      lines.forEach((line, r) => {
+        if (line.includes('\t')) {
+          const cells = line.split('\t');
+          let cellHtmls = [];
+          let lineCursor = globalCursor;
+          cells.forEach((cellText, c) => {
+            const isMasked = tableMasks.has(`${r}_${c}`);
+            let cellHtml = '';
+            if (isMasked) {
+              cellHtml = `<mark class="bg-blue-100/80 text-blue-800 rounded-sm py-0.5 pointer-events-auto" data-table-mask="${r}_${c}" data-entity-val="${escapeHtml(cellText)}">${escapeHtml(cellText)}</mark>`;
+            } else {
+              cellHtml = renderRange(text, lineCursor, lineCursor + cellText.length);
+            }
+            cellHtmls.push(`<span class="outline outline-1 outline-dashed outline-stone-300 pointer-events-none hover:bg-stone-50/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
+            lineCursor += cellText.length + 1; // move past the tab
+          });
+          html += cellHtmls.join('\t') + '\n';
+          globalCursor += line.length + 1; // perfectly advance to next line
+        } else {
+          html += renderRange(text, globalCursor, globalCursor + line.length) + '\n';
+          globalCursor += line.length + 1;
+        }
+      });
+      backdrop.innerHTML = html;
+    }
+
+    // A floating menu instead of a single button
+    const selectionBtn = document.createElement('div');
+    selectionBtn.className = 'fixed z-50 bg-stone-800 text-white text-xs rounded-md shadow-lg hidden pointer-events-auto overflow-hidden flex flex-col py-1';
+    document.body.appendChild(selectionBtn);
+
+    textarea.addEventListener('mouseup', (e) => {
+      setTimeout(() => {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selectedText = text.substring(start, end).trim();
+        
+        let html = '';
+        
+        // Compute table coordinates if inside a table block
+        let r = 0, c = 0, isTable = false, blockStart = 0, blockEnd = 0, cellCount = 0;
+        if (start === end) {
+          const lines = text.split('\n');
+          let currentLen = 0;
+          for (let i = 0; i < lines.length; i++) {
+            if (start <= currentLen + lines[i].length) {
+              r = i;
+              if (lines[i].includes('\t')) {
+                isTable = true;
+                const cells = lines[i].split('\t');
+                cellCount = cells.length;
+                let cellLen = currentLen;
+                for (let j = 0; j < cells.length; j++) {
+                  if (start <= cellLen + cells[j].length) {
+                    c = j; break;
+                  }
+                  cellLen += cells[j].length + 1;
+                }
+              }
+              break;
+            }
+            currentLen += lines[i].length + 1;
+          }
+          if (isTable) {
+            blockStart = r;
+            while (blockStart > 0 && lines[blockStart - 1].includes('\t')) blockStart--;
+            blockEnd = r;
+            while (blockEnd < lines.length - 1 && lines[blockEnd + 1].includes('\t')) blockEnd++;
+          }
+        }
+
+        if (selectedText.length > 1) {
+          const existingEnt = activeExtractedEntities.find(ent => ent.value === selectedText);
+          if (existingEnt) {
+             html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full" onclick="handleSelectionAction('remove', '${escapeHtml(selectedText)}')">- 取消遮蔽【${existingEnt.reason}】"${escapeHtml(selectedText)}"</button>`;
+          } else {
+             html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full" onclick="handleSelectionAction('add', '${escapeHtml(selectedText)}')">+ 將 "${escapeHtml(selectedText)}" 設為機密</button>`;
+          }
+        } else if (start === end) {
+          const ent = activeExtractedEntities.find(ent => start > ent.start && start < ent.end);
+          if (ent) {
+             html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full" onclick="handleSelectionAction('remove', '${escapeHtml(ent.value)}')">- 取消遮蔽【${ent.reason}】"${escapeHtml(ent.value)}"</button>`;
+          }
+          if (isTable) {
+             if (html) html += `<div class="h-px bg-stone-700 my-1 w-full"></div>`;
+             const isCellMasked = tableMasks.has(`${r}_${c}`);
+             if (isCellMasked) {
+                html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full text-blue-300" onclick="handleTableMask('unmask_cell', ${r}, ${c})">[表格] 解除遮蔽此儲存格</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full text-blue-300" onclick="handleTableMask('unmask_col', ${blockStart}, ${blockEnd}, ${c})">[表格] 解除整欄遮蔽</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full text-blue-300" onclick="handleTableMask('unmask_row', ${r}, ${cellCount})">[表格] 解除整列遮蔽</button>`;
+             } else {
+                html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full text-yellow-300" onclick="handleTableMask('mask_cell', ${r}, ${c})">[表格] 遮蔽此儲存格</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full text-yellow-300" onclick="handleTableMask('mask_col', ${blockStart}, ${blockEnd}, ${c})">[表格] 遮蔽整欄 (共 ${blockEnd - blockStart + 1} 列)</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-stone-700 transition-colors w-full text-yellow-300" onclick="handleTableMask('mask_row', ${r}, ${cellCount})">[表格] 遮蔽整列 (共 ${cellCount} 欄)</button>`;
+             }
+          }
+        }
+        
+        if (html) {
+          selectionBtn.innerHTML = html;
+          // 問題⑤：防止選單選單從視窗邊緣湢出
+          selectionBtn.classList.remove('hidden');
+          const menuW = selectionBtn.offsetWidth || 180;
+          const menuH = selectionBtn.offsetHeight || 120;
+          const safeX = Math.min(e.clientX, window.innerWidth - menuW - 10);
+          const safeY = Math.min(e.clientY + 15, window.innerHeight - menuH - 10);
+          selectionBtn.style.left = safeX + 'px';
+          selectionBtn.style.top = safeY + 'px';
+        } else {
+          selectionBtn.classList.add('hidden');
+        }
+      }, 10);
+    });
+
+    textarea.addEventListener('scroll', () => selectionBtn.classList.add('hidden'));
+    document.addEventListener('mousedown', (e) => {
+      if(!selectionBtn.contains(e.target) && e.target !== textarea) selectionBtn.classList.add('hidden');
+    });
+
+    function handleSelectionAction(action, val) {
+      if (val) {
+        if (action === "add") {
+          whitelist.delete(val);
+          customDict.push({ type: 'CUSTOM', value: val, reason: "手動選取加入" });
+        } else if (action === "remove") {
+          addToWhitelist(val);
+        }
+        triggerPreview();
+      }
+      selectionBtn.classList.add('hidden');
+      textarea.setSelectionRange(0,0);
+    }
+
+    function handleTableMask(action, p1, p2, p3) {
+      if (action === 'mask_cell') {
+        tableMasks.add(`${p1}_${p2}`);
+      } else if (action === 'unmask_cell') {
+        tableMasks.delete(`${p1}_${p2}`);
+      } else if (action === 'mask_col') {
+        for(let i=p1; i<=p2; i++) tableMasks.add(`${i}_${p3}`);
+      } else if (action === 'unmask_col') {
+        for(let i=p1; i<=p2; i++) tableMasks.delete(`${i}_${p3}`);
+      } else if (action === 'mask_row') {
+        for(let j=0; j<p2; j++) tableMasks.add(`${p1}_${j}`);
+      } else if (action === 'unmask_row') {
+        for(let j=0; j<p2; j++) tableMasks.delete(`${p1}_${j}`);
+      }
+      triggerPreview();
+      selectionBtn.classList.add('hidden');
+      textarea.setSelectionRange(0,0);
+    }
+
+    function extractStaticEntities(text) {
+      let entities = [];
+      const addEnt = (type, val, reason, isAi = false, isCritical = false) => {
+        let pos = text.indexOf(val);
+        while (pos !== -1) {
+          entities.push({ type, value: val, reason, isAi, isCritical, start: pos, end: pos + val.length });
+          pos = text.indexOf(val, pos + 1);
+        }
+      };
+
+      HARD_BLOCK_KEYWORDS.forEach(kw => addEnt("CRITICAL", kw, "極敏感詞彙", false, true));
+      customDict.forEach(item => addEnt(item.type, item.value, item.reason, item.isAi, false));
+      
+      REGEX_RULES.forEach(rule => {
+        let match;
+        const regex = new RegExp(rule.regex);
+        while ((match = regex.exec(text)) !== null) {
+          entities.push({ type: rule.type, value: match[0], reason: rule.name, isAi: false, isCritical: false, start: match.index, end: match.index + match[0].length });
+        }
+      });
+
+      entities.sort((a, b) => {
+        if (a.isCritical !== b.isCritical) return a.isCritical ? -1 : 1;
+        return b.value.length - a.value.length;
+      });
+      const unique = [];
+      const occupied = new Array(text.length).fill(false);
+
+      entities.forEach(ent => {
+        if (whitelist.has(ent.value)) return;
+        let overlap = false;
+        for (let i = ent.start; i < ent.end; i++) {
+          if (occupied[i]) { overlap = true; break; }
+        }
+        if (!overlap) {
+          unique.push(ent);
+          for (let i = ent.start; i < ent.end; i++) occupied[i] = true;
+        }
+      });
+
+      // 確保實體照原始文字出現的順序排列，以避免渲染 `<mark>` 時因游標錯位漏標
+      unique.sort((a, b) => a.start - b.start);
+
+      return unique;
+    }
+
+    function triggerPreview() {
+      const text = textarea.value;
+      if(!text) {
+        document.getElementById("entityChips").innerHTML = '<span class="text-stone-400 italic text-xs py-1">無資料</span>';
+        activeExtractedEntities = [];
+        renderHighlights();
+        return;
+      }
+      
+      // 問題⑨：超長文本警告
+      if (text.length > 50000) {
+        const chips = document.getElementById("entityChips");
+        chips.innerHTML = '<span class="text-amber-500 italic text-xs py-1">文字長度超過 50,000 字元，區間發現可能較慢。</span>';
+      }
+
+      activeExtractedEntities = extractStaticEntities(text);
+
+      renderHighlights();
+
+      const container = document.getElementById("entityChips");
+      container.innerHTML = "";
+
+      const uniqueVals = new Map();
+      activeExtractedEntities.forEach((ent, i) => {
+        if(!uniqueVals.has(ent.value)) uniqueVals.set(ent.value, { ...ent, ids: [] });
+        uniqueVals.get(ent.value).ids.push(i);
+      });
+
+      if (uniqueVals.size === 0 && tableMasks.size === 0) {
+        container.innerHTML = '<span class="text-stone-400 italic text-xs py-1">無資料</span>';
+        return;
+      }
+
+      uniqueVals.forEach((data, val) => {
+        const idList = data.ids.map(id => `mark-${id}`).join(',');
+        const el = document.createElement('span');
+        const isAi = data.isAi;
+        const isCritical = data.isCritical;
+        
+        let bgClass, hoverClass, btnClass;
+        if (isCritical) {
+          bgClass = 'bg-red-50 text-red-700 border-red-200';
+          hoverClass = 'bg-red-100';
+          btnClass = 'text-red-400 hover:text-red-600';
+        } else if (isAi) {
+          bgClass = 'bg-purple-50 text-purple-700 border-purple-200';
+          hoverClass = 'bg-purple-100';
+          btnClass = 'text-purple-400 hover:text-purple-600';
+        } else {
+          bgClass = 'bg-blue-50 text-blue-700 border-blue-200';
+          hoverClass = 'bg-blue-100';
+          btnClass = 'text-blue-400 hover:text-blue-600';
+        }
+        
+        el.className = `${bgClass} px-2 py-0.5 rounded text-xs border flex items-center transition-all cursor-default flex-shrink-0`;
+        el.setAttribute('data-entity-chip', val);
+        el.innerHTML = `${val} <button onclick="addToWhitelist('${val}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
+        
+        el.onmouseenter = (e) => {
+          el.classList.replace(bgClass.split(' ')[0], hoverClass);
+          highlightEntityChip(val, true);
+          showGlobalTooltip(e, `類別: ${data.reason}`);
+        };
+        el.onmousemove = (e) => {
+          showGlobalTooltip(e, `類別: ${data.reason}`);
+        };
+        el.onmouseleave = () => {
+          el.classList.replace(hoverClass, bgClass.split(' ')[0]);
+          highlightEntityChip(val, false);
+          hideGlobalTooltip();
+        };
+        container.appendChild(el);
+      });
+
+      // 為表格手動遮蔽的儲存格額外渲染晶片（不注入 activeExtractedEntities 以避免產生重複 token）
+      const lines = text.split('\n');
+      let currentPos = 0;
+      lines.forEach((line, r) => {
+        if (line.includes('\t')) {
+          const cells = line.split('\t');
+          cells.forEach((cellText, c) => {
+            if (tableMasks.has(`${r}_${c}`) && cellText.trim() !== '') {
+              const maskKey = `${r}_${c}`;
+              const el = document.createElement('span');
+              el.className = 'bg-indigo-50 text-indigo-700 border-indigo-200 px-2 py-0.5 rounded text-xs border flex items-center transition-all cursor-default flex-shrink-0';
+              el.setAttribute('data-table-chip', maskKey);
+              el.innerHTML = `${cellText} <span class="ml-1 text-indigo-400 text-[10px]">表格</span>`;
+              el.onmouseenter = (e) => {
+                el.classList.add('bg-indigo-100');
+                // 高亮 backdrop 中對應的表格 mark
+                document.querySelectorAll(`[data-table-mask="${maskKey}"]`).forEach(m => m.classList.add('ring-2', 'ring-indigo-500'));
+                showGlobalTooltip(e, '表格手動遮蔽');
+              };
+              el.onmousemove = (e) => showGlobalTooltip(e, '表格手動遮蔽');
+              el.onmouseleave = () => {
+                el.classList.remove('bg-indigo-100');
+                document.querySelectorAll(`[data-table-mask="${maskKey}"]`).forEach(m => m.classList.remove('ring-2', 'ring-indigo-500'));
+                hideGlobalTooltip();
+              };
+              container.appendChild(el);
+            }
+          });
+        }
+        currentPos += line.length + 1;
+      });
+
+      if (container.childElementCount === 0) {
+        container.innerHTML = '<span class="text-stone-400 italic text-xs py-1">無資料</span>';
+      }
+    }
+
+    function addToWhitelist(val) {
+      whitelist.add(val);
+      triggerPreview();
+    }
+
+    // ==========================================
+    // 去識別化執行
+    // ==========================================
+    function processAnonymizePhase1() {
+      const text = textarea.value;
+      if(!text.trim()) return;
+
+      const banner = document.getElementById("hardBlockBanner");
+      const copyBtn = document.getElementById("copyPromptBtn");
+      const phase2Btn = document.getElementById("phase2Btn");
+      
+      sessionVault = {};
+      reportData = [];
+
+      const blockedHits = HARD_BLOCK_KEYWORDS.filter(kw => text.includes(kw));
+      if (blockedHits.length > 0) {
+        triggerHardBlock([`靜態關鍵字攔截：偵測到「${blockedHits.join('」、「')}」`]);
+      } else {
+        resetHardBlockState();
+      }
+
+      const typeCounters = {};
+      const valToToken = {};
+      const tokenReplacements = [];
+      
+      const sortedUnique = [...activeExtractedEntities].sort((a,b) => b.value.length - a.value.length);
+      sortedUnique.forEach(ent => {
+        if (!valToToken[ent.value]) {
+          const typeKey = ent.type.toUpperCase();
+          typeCounters[typeKey] = (typeCounters[typeKey] || 0) + 1;
+          const token = `{{${typeKey}_${typeCounters[typeKey]}}}`;
+          valToToken[ent.value] = token;
+          tokenReplacements.push({ val: ent.value, token: token });
+          sessionVault[token] = ent.value;
+          reportData.push({ raw: ent.value, token: token, reason: ent.reason });
+        }
+      });
+
+      let anonymizedText = text;
+
+      // Phase 1.5: 優先處理座標式表格遮蔽 (Table Grid Masking)
+      if (tableMasks.size > 0) {
+        let lines = anonymizedText.split('\n');
+        let colCounters = {};
+        lines = lines.map((line, r) => {
+          if (line.includes('\t')) {
+            const cells = line.split('\t');
+            return cells.map((cellText, c) => {
+              if (tableMasks.has(`${r}_${c}`)) {
+                colCounters[c] = (colCounters[c] || 0) + 1;
+                const token = `{{TAB_C${c+1}_${colCounters[c]}}}`;
+                sessionVault[token] = cellText;
+                reportData.push({ raw: cellText, token: token, reason: "表格手動遮蔽" });
+                return token;
+              }
+              return cellText;
+            }).join('\t');
+          }
+          return line;
+        });
+        anonymizedText = lines.join('\n');
+      }
+
+      // 接著處理全域 Regex 與自訂詞庫遮蔽
+      tokenReplacements.forEach(({ val, token }) => {
+        anonymizedText = anonymizedText.split(val).join(token);
+      });
+
+      rawAnonymizedText = anonymizedText;
+      renderOutputAndReport(anonymizedText);
+      phase2Btn.classList.remove("hidden");
+      copyBtn.disabled = false;
+      
+      // 問題②：完成後短暫顯示 "^✓ 完成" 再復原
+      const phase1BtnText = document.getElementById('phase1BtnText');
+      if (phase1BtnText) {
+        const orig = phase1BtnText.textContent;
+        phase1BtnText.textContent = '\u2713 完成';
+        setTimeout(() => { phase1BtnText.textContent = orig; }, 1500);
+      }
+    }
+
+    function renderOutputAndReport(currentText) {
+      const systemInstruction = `【系統指令：本段文字已去識別化。請保留所有 {{TAG_X}} 代碼，並維持原始表格 Tab (\\t) 排版！】\n\n`;
+      document.getElementById("anonymizedOutput").value = systemInstruction + currentText;
+
+      const reportContainer = document.getElementById("anonymizeReport");
+      if (reportData.length === 0) {
+        reportContainer.innerHTML = '<div class="text-stone-400 italic">無遮蔽項目</div>';
+        return;
+      }
+      reportContainer.innerHTML = reportData.map(item => `
+        <div class="flex items-center gap-2 py-1 border-b border-stone-100 last:border-0 cursor-default transition-all hover:bg-stone-50"
+             data-report-row="${escapeHtml(item.raw)}"
+             onmouseenter="highlightEntityChip('${escapeHtml(item.raw)}', true)"
+             onmouseleave="highlightEntityChip('${escapeHtml(item.raw)}', false)">
+          <span class="font-semibold text-stone-800">${escapeHtml(item.raw)}</span>
+          <span class="text-stone-400">→</span>
+          <span class="text-blue-600">${escapeHtml(item.token)}</span>
+          <span class="text-stone-400 text-[10px] ml-auto">${item.isAi ? '🤖 AI' : escapeHtml(item.reason)}</span>
+        </div>
+      `).join('');
+    }
+
+    let phase2Controller = null;
+    let phase2IsRunning = false;
+
+    async function processAnonymizePhase2() {
+      if (phase2IsRunning) {
+        if (phase2Controller) phase2Controller.abort();
+        return;
+      }
+      phase2IsRunning = true;
+      phase2Controller = new AbortController();
+      let controller = phase2Controller;
+
+      const btn = document.getElementById("phase2Btn");
+      const spinner = document.getElementById("phase2Spinner");
+      const btnText = document.getElementById("phase2BtnText");
+      const url = document.getElementById('ollamaUrl').value.trim();
+      const model = document.getElementById('ollamaModel').value.trim();
+
+      try {
+        const checkRes = await fetch(`${url}/api/tags`);
+        if (!checkRes.ok) throw new Error();
+      } catch (err) {
+        alert("無法連線，地端 AI (Ollama) 可能未啟動或未設定 CORS。請先啟動 Ollama。");
+        phase2IsRunning = false;
+        return;
+      }
+      
+      const fullText = document.getElementById("anonymizedOutput").value;
+      const sysInstEnd = fullText.indexOf("】\n\n");
+      const currentText = sysInstEnd !== -1 ? fullText.substring(sysInstEnd + 3) : fullText;
+
+      btn.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
+      btn.classList.add("bg-red-600", "hover:bg-red-700");
+      if (spinner) spinner.classList.remove('hidden');
+      if (btnText) btnText.textContent = 'AI 掃描 (1/2 啟動) - 點擊取消';
+
+      // 問題⑨： AbortController + 3 分鐘逆時，過時後尋問用戶是否中止
+      let timeoutHandle = setTimeout(() => {
+        const keepGoing = confirm(`AI 回應超過 3 分鐘尚未完成。\n\n點擊「確定」將中止讀取；點擊「取消」將繼續等待。`);
+        if (keepGoing) controller.abort();
+      }, 3 * 60 * 1000);
+
+      // 動態容許上限 (至少 3000 字，或是輸入文字的 3 倍)
+      const maxAllowedLength = Math.max(3000, currentText.length * 3);
+
+      try {
+        // 通道一：實體擷取
+        const res1 = await fetch(`${url}/api/generate`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: model,
+            prompt: `找出下文中未遮蔽的「人名(PERSON)」(如有包含稱謂如：先生/小姐/同學/老師/學生等人名也請完整提取出來做為PERSON類別，例如「學生王小明」、「黃曉美老師」或「學生：王小明」請完整擷取)、「廠商機構(VENDOR)」、「地址(ADDRESS)」、「專案/活動名稱(PROJECT)」與「銀行/撥款帳號(BANK_ACCT)」。\n僅回傳 JSON 陣列如 [{"type":"PERSON","value":"王大","reason":"..."}]。若無發現請回傳 []。文：\n${currentText}`,
+            stream: true, format: "json"
+          })
+        });
+
+        if (!res1.ok) {
+            const errText = await res1.text();
+            throw new Error(`通道一 API 錯誤 (${res1.status}): ${errText}`);
+        }
+
+        const reader1 = res1.body.getReader();
+        const decoder1 = new TextDecoder("utf-8");
+        let fullResponse1 = "";
+        let buffer1 = "";
+
+        while (true) {
+          const { done, value } = await reader1.read();
+          if (done) break;
+          buffer1 += decoder1.decode(value, { stream: true });
+          const lines = buffer1.split("\n");
+          buffer1 = lines.pop();
+          
+          for (let line of lines) {
+            if (line.trim()) {
+              try {
+                const parsedLine = JSON.parse(line);
+                if (parsedLine.response) {
+                    fullResponse1 += parsedLine.response;
+                    if (btnText) btnText.textContent = `掃描(1/2) 已收 ${fullResponse1.length} 字 (點擊取消)`;
+                    if (fullResponse1.length > maxAllowedLength) {
+                        throw new Error(`回傳字數異常 (${fullResponse1.length}字)，系統啟動保護機制強制中止。`);
+                    }
+                }
+              } catch(e) {
+                 if (e.message && e.message.includes("回傳字數異常")) throw e;
+              }
+            }
+          }
+        }
+        
+        if (buffer1.trim()) {
+          try {
+             const parsedLine = JSON.parse(buffer1);
+             if (parsedLine.response) fullResponse1 += parsedLine.response;
+          } catch(e) {}
+        }
+
+        let parsed1 = [];
+        try {
+            let rawParsed = JSON.parse(fullResponse1 || "[]");
+            if (!Array.isArray(rawParsed) && rawParsed && typeof rawParsed === 'object') {
+                const arrays = Object.values(rawParsed).filter(v => Array.isArray(v));
+                if (arrays.length > 0) parsed1 = arrays[0];
+                else if (rawParsed.type && rawParsed.value) parsed1 = [rawParsed];
+                else parsed1 = [];
+            } else if (Array.isArray(rawParsed)) {
+                parsed1 = rawParsed;
+            } else {
+                parsed1 = [];
+            }
+        } catch (e) {
+            console.warn("通道一 JSON 解析失敗:", fullResponse1);
+            parsed1 = [];
+        }
+        if (!Array.isArray(parsed1)) parsed1 = [];
+
+        let newCount = 0;
+        let newText = currentText;
+
+        const typeCounters = {};
+        Object.keys(sessionVault).forEach(t => {
+          const match = t.match(/\{\{([A-Z_]+)_(\d+)\}\}/);
+          if(match) typeCounters[match[1]] = Math.max(typeCounters[match[1]] || 0, parseInt(match[2], 10));
+        });
+
+        parsed1.sort((a, b) => (b.value || "").length - (a.value || "").length);
+        parsed1.forEach(item => {
+          if (item.value && newText.includes(item.value) && !whitelist.has(item.value) && !item.value.startsWith("{{")) {
+            const tType = (item.type && /^[A-Z_]+$/.test(item.type)) ? item.type : "CUSTOM";
+            typeCounters[tType] = (typeCounters[tType] || 0) + 1;
+            const token = `{{${tType}_${typeCounters[tType]}}}`;
+            sessionVault[token] = item.value;
+            reportData.push({ raw: item.value, token: token, reason: item.reason || "AI 實體擷取", isAi: true });
+            newText = newText.split(item.value).join(token);
+            customDict.push({ type: tType, value: item.value, reason: item.reason || "AI 實體擷取", isAi: true });
+            newCount++;
+          }
+        });
+
+        rawAnonymizedText = newText;
+        renderOutputAndReport(newText);
+        triggerPreview();
+
+        // 通道二：風險判定
+        if (btnText) btnText.textContent = 'AI 掃描 (2/2 啟動)';
+        
+        const res2 = await fetch(`${url}/api/generate`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: model,
+            prompt: `判斷以下文章是否包含「特敏資訊」。特敏資訊包含：自我傷害、自殺、性騷擾、性侵害、家庭暴力、保護管束、特殊教育需求(如自閉症、過動等症狀或心評報告)、心理諮商與治療紀錄。\n如果包含上述任何一種情境，請務必回傳 JSON 格式：{"critical": true, "reason": "說明具體的風險內容"}\n如果不包含，請回傳：{"critical": false, "reason": ""}\n\n文：\n${currentText}`,
+            stream: true, format: "json"
+          })
+        });
+
+        if (!res2.ok) {
+            const errText = await res2.text();
+            throw new Error(`通道二 API 錯誤 (${res2.status}): ${errText}`);
+        }
+
+        const reader2 = res2.body.getReader();
+        const decoder2 = new TextDecoder("utf-8");
+        let fullResponse2 = "";
+        let buffer2 = "";
+
+        while (true) {
+          const { done, value } = await reader2.read();
+          if (done) break;
+          buffer2 += decoder2.decode(value, { stream: true });
+          const lines = buffer2.split("\n");
+          buffer2 = lines.pop();
+          
+          for (let line of lines) {
+            if (line.trim()) {
+              try {
+                const parsedLine = JSON.parse(line);
+                if (parsedLine.response) {
+                    fullResponse2 += parsedLine.response;
+                    if (btnText) btnText.textContent = `掃描(2/2) 已收 ${fullResponse2.length} 字 (點擊取消)`;
+                    if (fullResponse2.length > maxAllowedLength) {
+                        throw new Error(`回傳字數異常 (${fullResponse2.length}字)，系統啟動保護機制強制中止。`);
+                    }
+                }
+              } catch(e) {
+                 if (e.message && e.message.includes("回傳字數異常")) throw e;
+              }
+            }
+          }
+        }
+        
+        if (buffer2.trim()) {
+          try {
+             const parsedLine = JSON.parse(buffer2);
+             if (parsedLine.response) fullResponse2 += parsedLine.response;
+          } catch(e) {}
+        }
+
+        let criticalReasons = [];
+        try {
+            let parsed2 = JSON.parse(fullResponse2 || "{}");
+            if (Array.isArray(parsed2) && parsed2.length > 0) parsed2 = parsed2[0];
+            
+            if (parsed2.critical === true || parsed2.critical === "true") {
+                criticalReasons.push(`AI 深度掃描判定：${parsed2.reason || '發現特敏資訊風險'}`);
+            }
+        } catch (e) {
+            console.warn("通道二 JSON 解析失敗:", fullResponse2);
+        }
+
+        if (criticalReasons.length > 0) {
+            triggerHardBlock(criticalReasons);
+            alert(`掃描完成！\n新增了 ${newCount} 個實體遮蔽項目。\n發現特敏風險，已強制鎖定複製功能！`);
+        } else {
+            alert(`掃描完成！新增了 ${newCount} 個實體遮蔽項目。未發現額外特敏風險。`);
+        }
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          alert('AI 掃描已中止。');
+        } else {
+          console.error(err);
+          alert("AI 掃描失敗：\n" + err.message);
+        }
+      } finally {
+        clearTimeout(timeoutHandle);
+        phase2IsRunning = false;
+        btn.classList.add("bg-indigo-600", "hover:bg-indigo-700");
+        btn.classList.remove("bg-red-600", "hover:bg-red-700");
+        if (spinner) spinner.classList.add('hidden');
+        if (btnText) btnText.textContent = '透過地端 AI 深度掃描';
+      }
+    }
+
+    // ==========================================
+    // 還原執行
+    // ==========================================
+    function renderOriginalWithCapsules(missingTokens = []) {
+      const container = document.getElementById("readOnlyOriginal");
+      if (!rawAnonymizedText) {
+        container.innerText = document.getElementById("rawInput").value || "請先於「去識別化處理」情境中執行打包。";
+        return;
+      }
+
+      // Build a sorted list of tokens by their position in rawAnonymizedText
+      // so we can split the text into segments without escaping issues.
+      const tokens = Object.keys(sessionVault);
+      // Find all token occurrences with positions
+      let segments = [{ text: rawAnonymizedText, isToken: false }];
+
+      tokens.forEach(token => {
+        const newSegments = [];
+        segments.forEach(seg => {
+          if (seg.isToken) { newSegments.push(seg); return; }
+          const parts = seg.text.split(token);
+          parts.forEach((part, i) => {
+            if (part !== '') newSegments.push({ text: part, isToken: false });
+            if (i < parts.length - 1) newSegments.push({ text: token, isToken: true, token });
+          });
+        });
+        segments = newSegments;
+      });
+
+      // Render HTML from segments
+      let html = '';
+      segments.forEach(seg => {
+        if (seg.isToken) {
+          const token = seg.token;
+          const rawVal = sessionVault[token];
+          const isMissing = missingTokens.includes(token);
+          const bgClass = isMissing ? 'bg-red-100 text-red-800 border-red-400' : 'bg-stone-200 text-stone-800 border-stone-300';
+          html += `<span class="inline-block px-1.5 py-0.5 mx-0.5 rounded text-xs font-semibold border transition-all cursor-default ${bgClass}" data-token="${escapeHtml(token)}" onmouseenter="showGlobalTooltip(event, '標籤: ${escapeHtml(token)}'); highlightCrossReference('${escapeHtml(token)}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${escapeHtml(token)}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${escapeHtml(token)}')">${escapeHtml(rawVal)}</span>`;
+        } else {
+          html += escapeHtml(seg.text);
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderRestoreChips(missingTokens = []) {
+      const container = document.getElementById("restoreChips");
+      if (Object.keys(sessionVault).length === 0) {
+        container.innerHTML = '<span class="text-stone-400 italic text-xs">無遮蔽紀錄</span>';
+        return;
+      }
+      container.innerHTML = Object.entries(sessionVault).map(([token, raw]) => {
+        const isMissing = missingTokens.includes(token);
+        const cls = isMissing
+          ? 'bg-red-100 text-red-800 border border-red-300'
+          : 'bg-stone-100 text-stone-700 border border-stone-200';
+        return `
+          <div class="inline-block ${cls} px-2 py-1 rounded text-xs cursor-default transition-all" data-token="${token}" onmouseenter="showGlobalTooltip(event, '標籤: ${token}'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token}')">
+            ${escapeHtml(raw)}
+          </div>`;
+      }).join('');
+    }
+
+    function processRestore() {
+      let replyText = document.getElementById("aiReplyInput").value;
+      if (!replyText.trim()) return alert("請先貼上外部 AI 回覆");
+      if (Object.keys(sessionVault).length === 0) return alert("尚無遮蔽紀錄，請先於「去識別化處理」頁籤執行打包。");
+
+      // 自動移除 AI 可能照抄回來的系統指令前綴與空行
+      replyText = replyText.replace(/^【系統指令：本段文字已去識別化。請保留所有 \{\{TAG_X\}\} 代碼，並維持原始表格 Tab \(\\t\) 排版！】\s*/, "");
+
+      let html = escapeHtml(replyText);
+      const missing = [];
+
+      Object.entries(sessionVault).forEach(([token, rawVal]) => {
+        const span = `<span class="inline-block bg-blue-50 text-blue-800 px-1 rounded font-semibold border-b border-blue-200 transition-all cursor-pointer hover:bg-blue-100" data-token="${token}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${escapeHtml(rawVal)}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
+        if (replyText.includes(token)) {
+          html = html.split(token).join(span);
+        } else {
+          const clean = token.replace('{{', '').replace('}}', '');
+          // 問題⑪ Fallback 1： 允許 Token 前後多余空白
+          const pat1 = new RegExp(`\\{\\{\\s*${clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\}\\}`, 'gi');
+          // 問題⑪ Fallback 2： 處理中文書名號、全形括號、標准方括號等被書名號包裹的情況
+          const escapedClean = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const pat2 = new RegExp(`[【{\\[\uff08(]\\s*${escapedClean}\\s*[】}\\]\uff09)]`, 'gi');
+          if (pat1.test(replyText)) {
+            html = html.replace(pat1, span);
+          } else if (pat2.test(replyText)) {
+            html = html.replace(pat2, span);
+          } else {
+            missing.push(token);
+          }
+        }
+      });
+
+      // Apply outline dashed to restored table cells
+      let restoredLines = html.split('\n');
+      html = restoredLines.map(line => {
+        if (line.includes('\t')) {
+          return line.split('\t').map(cell => `<span class="outline outline-1 outline-dashed outline-stone-300 rounded-sm hover:bg-stone-50 transition-colors">${cell}</span>`).join('\t');
+        }
+        return line;
+      }).join('\n');
+
+      document.getElementById("restoredOutputView").innerHTML = html;
+      
+      const stat = document.getElementById("integrityStatus");
+      if (missing.length > 0) stat.innerHTML = `<span class="text-red-500">⚠ 遺漏 ${missing.length} 項，請查看左側紀錄</span>`;
+      else stat.innerHTML = `<span class="text-emerald-500">✓ 全數還原成功</span>`;
+
+      renderOriginalWithCapsules(missing);
+      renderRestoreChips(missing);
+
+      // 動態收合：將輸入框高度變小
+      document.getElementById("aiReplyInput").style.height = "60px";
+    }
+
+    function copyAnonymizedPrompt() {
+      const text = document.getElementById("anonymizedOutput").value;
+      if(text) navigator.clipboard.writeText(text).then(() => alert("已複製提示詞！"));
+    }
+    function clearRestoredResult() {
+      document.getElementById("restoredOutputView").innerHTML = "";
+      document.getElementById("integrityStatus").innerHTML = "";
+      document.getElementById("aiReplyInput").style.height = "160px";
+      renderOriginalWithCapsules([]);
+    }
+
+    function copyRestoredResult() {
+      const text = document.getElementById("restoredOutputView").innerText;
+      if(text) navigator.clipboard.writeText(text).then(() => alert("已複製還原結果！"));
+    }
+    function copyPsCommand() {
+      const cmd = document.getElementById("psCommand").innerText;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const btn = document.querySelector('[onclick="copyPsCommand()"]');
+        const orig = btn.innerText;
+        btn.innerText = "已複製";
+        btn.classList.add("bg-emerald-600");
+        setTimeout(() => { btn.innerText = orig; btn.classList.remove("bg-emerald-600"); }, 2000);
+      });
+    }
+    function clearLeftInput() {
+      textarea.value = "";
+      document.getElementById("anonymizedOutput").value = "";
+      rawAnonymizedText = "";
+      triggerPreview();
+      document.getElementById("anonymizeReport").innerHTML = '<div class="text-stone-400 italic">尚未執行</div>';
+      document.getElementById("phase2Btn").classList.add("hidden");
+      document.getElementById("copyPromptBtn").disabled = true;
+      resetHardBlockState(); // 確保清除內容時解除鎖定
+    }
+
+    window.toggleMask = function(el, rawText) {
+      const currentState = el.dataset.maskState || "0";
+      const maskSym = document.getElementById("customMaskSymbol").value || "■";
+      if (currentState === "0") {
+        el.innerText = maskSym.repeat(rawText.length);
+        el.dataset.maskState = "1";
+      } else if (currentState === "1") {
+        if (rawText.length <= 1) { el.innerText = "Ｏ"; } 
+        else if (rawText.length === 2) { el.innerText = rawText[0] + "Ｏ"; } 
+        else { el.innerText = rawText[0] + "Ｏ".repeat(rawText.length - 2) + rawText[rawText.length - 1]; }
+        el.dataset.maskState = "2";
+      } else {
+        el.innerText = rawText;
+        el.dataset.maskState = "0";
+      }
+    };
+
+    // 啟動與重整時清空所有輸入框，確保不殘留資訊
+    window.addEventListener('load', () => {
+      document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+        if(el.id !== 'ollamaUrl' && el.id !== 'ollamaModel') el.value = '';
+      });
+      clearLeftInput();
+    });
+
+  </script>
+</body>
+</html>
