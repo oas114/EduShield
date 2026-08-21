@@ -1665,7 +1665,8 @@
       reportData = [];
 
       const blockedHits = HARD_BLOCK_KEYWORDS.filter(kw => text.includes(kw));
-      if (blockedHits.length > 0) {
+      const isHardBlocked = blockedHits.length > 0;
+      if (isHardBlocked) {
         triggerHardBlock([`靜態關鍵字攔截：偵測到「${blockedHits.join('」、「')}」`]);
       } else {
         resetHardBlockState();
@@ -1721,7 +1722,9 @@
       rawAnonymizedText = anonymizedText;
       renderOutputAndReport(anonymizedText);
       phase2Btn.classList.remove("hidden");
-      copyBtn.disabled = false;
+      if (!isHardBlocked) {
+        copyBtn.disabled = false;
+      }
       
       // 問題②：完成後短暫顯示 "^✓ 完成" 再復原
       const phase1BtnText = document.getElementById('phase1BtnText');
