@@ -24,8 +24,8 @@
 EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依據您的網路環境選擇適合的執行方式：
 
 ### 1. 線上測試與評估
-- **網址：** [https://oas114.github.io/EduShield/EduShield.html](https://oas114.github.io/EduShield/EduShield.html)
-- ⚠️ **強烈提醒：** 線上版本僅供「免下載快速體驗功能」。若您即將處理含有真實個資或機密資料的檔案，強烈建議採用下方的**離線模式**以確保隱私絕對安全。
+- **網址：** <a href="https://oas114.github.io/EduShield/EduShield.html" target="_blank" rel="noopener noreferrer">https://oas114.github.io/EduShield/EduShield.html</a>
+- **強烈提醒：** 線上版本僅供「免下載快速體驗功能」。若您即將處理含有真實個資或機密資料的檔案，強烈建議採用下方的**離線模式**以確保隱私絕對安全。
 
 ### 2. 一般離線使用（推薦）
 只需從本專案下載 `EduShield.html` 單一檔案，雙擊使用瀏覽器開啟即可。
@@ -39,7 +39,7 @@ EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依
 
 ---
 
-### 💡 核心操作流程
+###  核心操作流程
 不論採用何種環境，系統皆遵循直覺的「遮蔽 → 送 AI → 還原」核心流程：
 
 1. **貼上與遮蔽：** 將公文或表格貼入左側「原始資料輸入區」，系統會自動偵測並將敏感個資（如姓名、身分證、成績）替換為代碼（如 `{{PERSON_1}}`）。
