@@ -1809,7 +1809,7 @@
           signal: controller.signal,
           body: JSON.stringify({
             model: model,
-            prompt: `找出下文中未遮蔽的「人名(PERSON)」(含各種稱謂組合格式，包括：稱謂在前如「國文教師林大為」、「數學老師張美麗」、「導師陳大文」；稱謂在後如「黃曉美老師」、「王小明同學」；冒號分隔如「學生：王小明」；以及單純人名。請將姓名部分完整提取為PERSON類別，不包含職稱)、「廠商機構(VENDOR)」、「地址(ADDRESS)」、「專案/活動名稱(PROJECT)」與「銀行/撥款帳號(BANK_ACCT)」。\n僅回傳 JSON 陣列如 [{"type":"PERSON","value":"王大","reason":"..."}]。若無發現請回傳 []。文：\n${currentText}`,
+            prompt: `找出下文中未遮蔽的「人名(PERSON)」(含各種稱謂組合格式，包括：稱謂在前如「國文教師林大為」、「數學老師張美麗」；稱謂在後如「黃曉美老師」；冒號分隔如「學生：王小明」；以及單純人名或小名/暱稱如「陳建國」、「老王」。請將姓名部分完整提取為PERSON類別，不包含職稱)、「廠商機構/店家(VENDOR)」(包含未寫明公司的店家，如「大方餐飲店」、「快樂商行」)、「地址(ADDRESS)」、「專案/活動名稱(PROJECT)」與「銀行/撥款帳號(BANK_ACCT)」。\n僅回傳 JSON 陣列如 [{"type":"PERSON","value":"王大","reason":"..."}]。若無發現請回傳 []。文：\n${currentText}`,
             stream: true, format: "json"
           })
         });
