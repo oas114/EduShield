@@ -19,7 +19,10 @@ Whenever `EduShield_README.md` is updated, this file MUST be updated to match.
 
 > **Reference Baseline**: This document is written strictly against the `EduShield.html` source code. All function names, constants, and DOM IDs correspond directly to the codebase.
 
-[ [繁體中文 (EduShield_README.md)](EduShield_README.md) | English ]
+[ [繁體中文 (EduShield_README.md)](EduShield_README.md) | [English](EduShield_README.en.md) ]
+
+✨ **[Try the Interactive Manual](https://oasgrow.com/EduShield/#)** ✨  
+*We highly recommend exploring the interactive manual first to experience how EduShield works.*
 
 ---
 

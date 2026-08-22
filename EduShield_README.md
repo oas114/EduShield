@@ -17,6 +17,9 @@ To recompile:
 
 [ [繁體中文](EduShield_README.md) | [English (EduShield_README.en.md)](EduShield_README.en.md) ]
 
+✨ **[前往 EduShield 互動式體驗手冊](https://oasgrow.com/EduShield/#)** ✨  
+*強烈建議您先前往互動式體驗手冊，透過實際操作了解系統運作方式與各項核心功能。*
+
 > [!NOTE]
 > 若更新本文件，請同步更新對應的英文版 **`EduShield_README.en.md`**。
 

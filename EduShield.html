@@ -1651,6 +1651,7 @@
     }
 
     function addToWhitelist(val) {
+      hideGlobalTooltip();
       whitelist.add(val);
       triggerPreview();
     }

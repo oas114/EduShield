@@ -8,6 +8,11 @@
 
 ---
 
+✨ **[Try the Interactive Manual](https://oasgrow.com/EduShield/#)** ✨  
+*We highly recommend exploring the interactive manual first to experience how EduShield works.*
+
+---
+
 ## Why EduShield?
 
 With generative AI now mainstream, educators, social workers, and administrators face a critical dilemma: they want to use AI (ChatGPT, Claude, etc.) to handle paperwork more efficiently, but cannot risk exposing students' personal data or confidential records, which may violate data protection laws.
