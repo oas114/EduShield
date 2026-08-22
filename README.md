@@ -2,7 +2,7 @@
 
 **「致力於打造零信任個資隱私防護網，讓每個人都能安心且高效地使用 AI。」**
 
- **開發者：** OA (oas114) |  **<a href="https://ko-fi.com/oasgrow" target="_blank" rel="noopener noreferrer">支持此專案 (Ko-fi 小額贊助)</a>**
+ **開發者：** OA (oas114) |  **[支持此專案 (Ko-fi 小額贊助)](https://ko-fi.com/oasgrow)**
 
 ---
 
@@ -24,7 +24,7 @@
 EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依據您的網路環境選擇適合的執行方式：
 
 ### 1. 線上測試與評估
-- **網址：** <a href="https://oas114.github.io/EduShield/EduShield.html" target="_blank" rel="noopener noreferrer">https://oas114.github.io/EduShield/EduShield.html</a>
+- **網址：** [https://oas114.github.io/EduShield/EduShield.html](https://oas114.github.io/EduShield/EduShield.html)
 - **強烈提醒：** 線上版本僅供「免下載快速體驗功能」。若您即將處理含有真實個資或機密資料的檔案，強烈建議採用下方的**離線模式**以確保隱私絕對安全。
 
 ### 2. 一般離線使用（推薦）
@@ -50,10 +50,10 @@ EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依
 
 為了讓您能快速熟悉並體驗 EduShield 的各項強大功能，我準備了 12 種涵蓋日常教育行政與輔導工作的測試情境（包含基本個資遮蔽、表格排版、硬阻斷防護及地端 AI 深度掃描等）。
 
-強烈建議您前往查閱 **<a href="./EduShield_Test_Scenarios.md" target="_blank">EduShield 系統測試情境演練手冊 (EduShield_Test_Scenarios.md)</a>**，您可以直接複製手冊中的範例資料進行實機操作測試，快速掌握系統的使用訣竅！
+強烈建議您前往查閱 **[EduShield 系統測試情境演練手冊 (EduShield_Test_Scenarios.md)](./EduShield_Test_Scenarios.md)**，您可以直接複製手冊中的範例資料進行實機操作測試，快速掌握系統的使用訣竅！
 
 >  **進階使用者與開發者請注意：**
-> 關於自訂詞庫 (CSV) 格式、地端 AI (Ollama) 串接端點設定、正則表達式增修等詳細技術規格，請參閱完整的 **<a href="./EduShield_README.md" target="_blank">EduShield 技術說明手冊 (EduShield_README.md)</a>**。
+> 關於自訂詞庫 (CSV) 格式、地端 AI (Ollama) 串接端點設定、正則表達式增修等詳細技術規格，請參閱完整的 **[EduShield 技術說明手冊 (EduShield_README.md)](./EduShield_README.md)**。
 
 ##  未來規劃
 
@@ -69,5 +69,5 @@ EduShield 目前作為公益開源專案提供給大眾使用。
 
 如果您覺得 EduShield 幫您省下了寶貴的時間，或讓您能毫無顧忌地擁抱 AI，歡迎請我喝杯咖啡！您的每一杯咖啡贊助，都將成為我持續開發的動力：
 
-*  **<a href="https://ko-fi.com/oasgrow" target="_blank" rel="noopener noreferrer">點此前往 Ko-fi 給予小額贊助支持</a>**
+*  **[點此前往 Ko-fi 給予小額贊助支持](https://ko-fi.com/oasgrow)**
 *  **聯絡信箱：** oasgrow [at] gmail.com （歡迎教育單位推廣、個人/組織/企業洽詢合作或提交功能回饋）
