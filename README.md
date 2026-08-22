@@ -1,73 +1,140 @@
-#  EduShield 教育隱私保護系統
+[ English | [繁體中文 (README.zh-TW.md)](README.zh-TW.md) ]
 
-**「致力於打造零信任個資隱私防護網，讓每個人都能安心且高效地使用 AI。」**
+# 🛡️ EduShield — Zero-Trust PII De-identification for AI Workflows
 
- **開發者：** OA (oas114) |  **[支持此專案 (Ko-fi 小額贊助)](https://ko-fi.com/oasgrow)**
+> *"Mask sensitive data before sending to AI. Restore it back in one click. 100% in-browser — no data ever leaves your device."*
 
----
-
-##  開發原由
-
-在生成式 AI 普及的現在，許多教育工作者、社工與基層行政人員正面臨一個巨大的兩難：我們想利用 AI（如 ChatGPT、Claude）處理繁雜的公文與表格來提升效率，卻又深怕學生個資或機密資料外洩，面臨嚴重的法律風險。
-
-為了解決這個痛點，我開發了 **EduShield** ——一款完全免費、開源且極度安全的去識別化工具。希望讓第一線人員能毫無顧忌地擁抱 AI，為您省下寶貴的加班時間。
-
-##  專案特點
-
-* **極致的隱私安全（零信任架構）：** 採用純靜態單一 HTML 檔案設計。您的資料不上傳雲端、不落地，關閉網頁即銷毀，徹底杜絕外洩風險。
-* **隨插即用零門檻：** 不需要懂程式或安裝複雜軟體，雙擊網頁即可為公文或表格進行「互動式遮蔽」，大幅節省手動打碼的加班時間。
-* **社會安全防護網（硬阻斷機制）：** 系統內建「硬阻斷（Hard Block）」機制，一旦偵測到如性平、家暴等特敏資訊，會強制鎖定防護，避免人員因疏忽而違反通報保密原則。
-* **混合式防禦：** 支援快速的靜態規則（Regex）比對，並可選用擴充地端 AI（Ollama）進行深度的語意與風險掃描。
-
-##  使用說明
-
-EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依據您的網路環境選擇適合的執行方式：
-
-### 1. 線上測試與評估
-- **網址：** [https://oas114.github.io/EduShield/EduShield.html](https://oas114.github.io/EduShield/EduShield.html)
-- **強烈提醒：** 線上版本僅供「免下載快速體驗功能」。若您即將處理含有真實個資或機密資料的檔案，強烈建議採用下方的**離線模式**以確保隱私絕對安全。
-
-### 2. 一般離線使用（推薦）
-只需從本專案下載 `EduShield.html` 單一檔案，雙擊使用瀏覽器開啟即可。
-所有的運算與資料替換皆在您的本地瀏覽器記憶體中完成，資料絕不連網、不落地。
-
-### 3. 完全無網（內網）環境
-若您的操作電腦（如公務機、封閉內網）**完全沒有連線至網際網路**，將無法載入外部的介面樣式 CDN。
-- 請務必同時下載 **`EduShield.html`** 與 **`style.css`** 兩個檔案。
-- 將這兩個檔案**「放置於同一個資料夾中」**。
-- 雙擊開啟 `EduShield.html`，系統將自動啟動本地備援機制，為您呈現完整且美觀的使用者介面。
+**Author:** OA (oas114) | **[Support this project (Ko-fi)](https://ko-fi.com/oasgrow)**
 
 ---
 
-###  核心操作流程
-不論採用何種環境，系統皆遵循直覺的「遮蔽 → 送 AI → 還原」核心流程：
+## Why EduShield?
 
-1. **貼上與遮蔽：** 將公文或表格貼入左側「原始資料輸入區」，系統會自動偵測並將敏感個資（如姓名、身分證、成績）替換為代碼（如 `{{PERSON_1}}`）。
-2. **安全對話：** 點擊「複製已遮蔽資料」，將去識別化後的文字貼給 ChatGPT 或 Claude 進行處理。
-3. **一鍵還原：** 將外部 AI 產出的結果貼回系統的「外部 AI 回覆區」，點擊執行還原，系統會自動精準地把代碼替換回原本的真實資料。
+With generative AI now mainstream, educators, social workers, and administrators face a critical dilemma: they want to use AI (ChatGPT, Claude, etc.) to handle paperwork more efficiently, but cannot risk exposing students' personal data or confidential records, which may violate data protection laws.
 
-###  情境演練與測試
+**EduShield** solves this with a complete three-stage privacy-safe AI workflow: **Mask → Send → Restore** — and it runs entirely inside your browser without sending a single byte to any server.
 
-為了讓您能快速熟悉並體驗 EduShield 的各項強大功能，我準備了 12 種涵蓋日常教育行政與輔導工作的測試情境（包含基本個資遮蔽、表格排版、硬阻斷防護及地端 AI 深度掃描等）。
+---
 
-強烈建議您前往查閱 **[EduShield 系統測試情境演練手冊 (EduShield_Test_Scenarios.md)](./EduShield_Test_Scenarios.md)**，您可以直接複製手冊中的範例資料進行實機操作測試，快速掌握系統的使用訣竅！
+## Technical Architecture
 
->  **進階使用者與開發者請注意：**
-> 關於自訂詞庫 (CSV) 格式、地端 AI (Ollama) 串接端點設定、正則表達式增修等詳細技術規格，請參閱完整的 **[EduShield 技術說明手冊 (EduShield_README.md)](./EduShield_README.md)**。
+### Zero-Trust, Pure Frontend Design
 
-##  未來規劃
+EduShield is a **single static HTML file**. There is no backend, no database, no API server. Everything — regex matching, token replacement, restoration, and AI interaction — runs in your **local browser RAM**.
 
-EduShield 目前作為公益開源專案提供給大眾使用。
+| Property | Detail |
+|----------|--------|
+| **Data Persistence** | Zero. All data is destroyed on page close or refresh. No disk writes, no cloud uploads. |
+| **Credentials** | None required. No API keys, no accounts. |
+| **Network** | Fully optional. Works completely offline. Local AI (Ollama) connects only to `http://localhost:11434` (loopback). |
+| **Startup Safety** | All input fields are cleared on load to prevent browser autofill from leaking previous session data. |
 
-未來的開發藍圖包含：
-1. **開發各領域版本：** 與各領域貢獻者合作，快速制定各領域專屬的個資正則表達式（Regex）規則庫及硬阻斷詞庫，以求快速部署至不同產業。雖然目前專案名為 EduShield（教育防護盾），但未來期盼能以此架構為基礎，發展出各領域專屬的 Shield。
-2. **持續維護與更新：** 擴充台灣專屬的個資正則表達式（Regex）規則庫，確保防護網與時俱進。
-3. **技術研發：** 完善地端 AI（Ollama）的混合防禦機制，提升語意辨識精準度。
-4. **推動進階版本：** 協助專案邁向未來具備稽核日誌的「企業版」、「個人版」以及支援全球市場的「國際版」。
+### Hybrid Defense Engine
 
-##  聯絡作者與贊助支持
+**Layer 1 — Static Regex Fast-Match**
 
-如果您覺得 EduShield 幫您省下了寶貴的時間，或讓您能毫無顧忌地擁抱 AI，歡迎請我喝杯咖啡！您的每一杯咖啡贊助，都將成為我持續開發的動力：
+Built-in `REGEX_RULES` array covers 20+ PII categories with instant matching:
+- National IDs, Resident Certificates, Dates (ROC & Gregorian), Mobile & Landline Phones, Email, Addresses, Student IDs, Grades, Class Ranks, Disciplinary Records, School Roles/Titles, Document Numbers, Vendor Names, Budget Amounts, and more.
 
-*  **[點此前往 Ko-fi 給予小額贊助支持](https://ko-fi.com/oasgrow)**
-*  **聯絡信箱：** oasgrow [at] gmail.com （歡迎教育單位推廣、個人/組織/企業洽詢合作或提交功能回饋）
+> **Note on Localization**: Default rules are tuned for **Taiwan (ROC)** data formats. Contributions for other countries' formats (US SSN, EU GDPR fields, UK NI numbers, etc.) are very welcome — see [Contributing](#localization--contributing) below.
+
+**Layer 2 — Local LLM Semantic Scan** *(Optional)*
+
+Integrates with [Ollama](https://ollama.com/) running on your own machine. No data ever leaves your device.
+
+- **Channel 1 (Entity Extraction)**: Catches entities that static regex cannot detect — informal person names, vendor shops without formal registration suffixes, internal project codenames, etc.
+- **Channel 2 (Risk Assessment)**: Performs semantic risk detection for sensitive *narratives* described in plain language (e.g., domestic violence situations, self-harm references, counseling records) — even when no hard-block keyword is used verbatim.
+
+Recommended model: `qwen2.5:3b` — runs well on older hardware and low-memory machines.
+
+### Session Vault & Restore Mechanism
+
+Every masked item is stored in an in-memory `sessionVault` as a unique token (`{{TYPE_N}}`). After the external AI processes the masked text, EduShield restores original data using a **triple-tolerance matching algorithm**:
+1. Exact match
+2. Whitespace-tolerant match (handles AI-introduced spaces around tokens)
+3. Bracket-tolerant match (handles `【TYPE_N】`, `[TYPE_N]`, `(TYPE_N)`)
+
+### Hard Block Interlock
+
+The `HARD_BLOCK_KEYWORDS` array contains 36 extremely sensitive terms (related to child protection, gender-based violence, special education status, mental health records, etc.). If any are detected:
+- A **red warning banner** appears at the top of the UI
+- The **copy button is locked** — preventing accidental data exfiltration
+- The user must explicitly **acknowledge and unlock** before proceeding
+
+---
+
+## Deployment Modes
+
+| Mode | Use Case | Files Needed |
+|------|----------|-------------|
+| **Online Sandbox** | Quick feature evaluation — *never use with real data* | None (browser-based via GitHub Pages) |
+| **Offline Single-File** *(Recommended)* | Everyday use with real documents | `EduShield.html` only |
+| **Air-Gapped / No Internet** | Government machines, closed intranets | `EduShield.html` + `style.css` (in the same folder) |
+
+🔗 **Online Sandbox**: [https://oas114.github.io/EduShield/EduShield.html](https://oas114.github.io/EduShield/EduShield.html)
+
+> [!WARNING]
+> The online version is for **evaluation only**. For any real personal data or confidential records, always use the **offline single-file mode**.
+
+---
+
+## Core Workflow
+
+```
+1. Paste & Mask
+   Paste your document → System auto-detects & replaces PII with tokens (e.g., {{PERSON_1}})
+
+2. Send to AI
+   Click "Copy Masked Data" → Paste into ChatGPT / Claude → AI processes safely
+
+3. Restore
+   Paste AI reply back → Click "Run Restore" → All tokens replaced with originals
+```
+
+---
+
+## Localization & Contributing
+
+EduShield's default `REGEX_RULES` engine is optimized for **Taiwan (ROC)** identifiers and data formats. We recognize that PII looks very different around the world.
+
+**We warmly invite developers worldwide to submit Pull Requests to:**
+- Add Regex rules for your country's PII formats (US SSN, Japanese My Number, Korean 주민번호, EU GDPR-relevant fields, etc.)
+- Contribute domain-specific `HARD_BLOCK_KEYWORDS` for your sector (healthcare, legal, social work, etc.)
+- Translate the UI or documentation into additional languages
+
+To add a custom detection rule, open `EduShield.html`, search for `REGEX_RULES`, and add an entry:
+```javascript
+{ type: "TAG_NAME", regex: /your-regex/g, name: "Display Name", example: "Match Example" }
+```
+
+To add a Hard Block keyword, search for `HARD_BLOCK_KEYWORDS` and add a string to the array.
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| 📖 [EduShield_README.en.md](./EduShield_README.en.md) | Full technical reference — modules, APIs, data structures, developer guide (English) |
+| 📖 [EduShield_README.md](./EduShield_README.md) | Full technical reference (Traditional Chinese) |
+| 🧪 [EduShield_Test_Scenarios.md](./EduShield_Test_Scenarios.md) | 12 hands-on test scenarios covering all major features (Traditional Chinese) |
+
+---
+
+## Roadmap
+
+EduShield is an open-source public-benefit project. Planned development includes:
+
+1. **Multi-domain Expansion**: Collaborate with contributors across sectors to build domain-specific `REGEX_RULES` and `HARD_BLOCK_KEYWORDS` libraries — enabling rapid deployment of specialized "Shields" beyond education (e.g., MedShield, LawShield).
+2. **Ongoing Maintenance**: Expand and keep the Taiwan-specific PII rule library current.
+3. **AI Integration Research**: Improve local LLM (Ollama) semantic detection accuracy.
+4. **Advanced Editions**: Lay groundwork for future enterprise (with audit logs), personal, and international editions.
+
+---
+
+## License & Author
+
+- **License**: [MIT License](./LICENSE)
+- **Author**: OA (oas114)
+- **Support**: [Buy me a coffee on Ko-fi](https://ko-fi.com/oasgrow)
+- **Contact**: oasgrow [at] gmail.com — open to partnerships, institutional inquiries, and feature feedback

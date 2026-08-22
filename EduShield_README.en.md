@@ -1,0 +1,387 @@
+# EduShield — Full Technical Reference
+
+<!--
+[AI_SYSTEM_INSTRUCTIONS_START]
+ATTENTION ALL AI ASSISTANTS:
+If you modify `EduShield.html` and your modifications include ANY changes, additions, or removals of Tailwind CSS utility classes, you MUST recompile the local CSS fallback file.
+Failure to do so will break the application for users in offline environments.
+
+To recompile:
+1. Open terminal, navigate to the `dev/` folder inside the project root.
+2. Run the build script: `npm run build:css`
+(This will output the updated `style.css` to the root directory).
+
+IMPORTANT SYNC NOTE:
+This file (`EduShield_README.en.md`) is a full English translation of `EduShield_README.md`.
+Whenever `EduShield_README.md` is updated, this file MUST be updated to match.
+[AI_SYSTEM_INSTRUCTIONS_END]
+-->
+
+> **Reference Baseline**: This document is written strictly against the `EduShield.html` source code. All function names, constants, and DOM IDs correspond directly to the codebase.
+
+[ [繁體中文 (EduShield_README.md)](EduShield_README.md) | English ]
+
+---
+
+## I. System Overview
+
+### 1.1 Purpose
+
+**EduShield** is a de-identification and PII (Personally Identifiable Information) protection tool designed for the education sector. The core problem it solves: educators need to submit documents or spreadsheets containing student names, ID numbers, grades, and other personal data to external AI services (e.g., ChatGPT, Claude) for processing — but doing so risks violating personal data protection laws. EduShield provides a complete three-stage workflow: **Mask → Send to AI → Restore**.
+
+### 1.2 Architecture & Security Features
+
+| Feature | Description |
+|---------|-------------|
+| **Runtime Environment** | Pure static single-file HTML. Open directly in a browser — no Node.js, no server, no installation required |
+| **Data Lifecycle** | All processing (regex matching, token replacement, restoration) occurs entirely in browser RAM. On page close or refresh, all data (`sessionVault`, `customDict`) is destroyed — no disk writes, no cloud uploads |
+| **Zero Credential Dependency** | The system requires no API keys or accounts. The local AI (Ollama) module is optional and connects only to `http://localhost:11434` (loopback address) |
+| **Startup Sanitization** | `window.addEventListener('load', ...)` clears all `textarea` and `input[type="text"]` fields (except `ollamaUrl` and `ollamaModel`) on load, preventing browser autofill from leaking history |
+| **CSS Framework** | Tailwind CSS with a three-tier graceful degradation strategy: **CDN-first → Local fallback (`style.css`) → Failsafe guidance screen** |
+| **Font** | Inter (system sans-serif stack, highest priority) |
+
+---
+
+## II. Core Modules & Technical Specifications
+
+### 2.1 Detection & Masking Rule Engine (`REGEX_RULES`)
+
+The system defines a constant array `REGEX_RULES`. Each entry follows the format `{ type, regex, name, example }`. Tokens follow the format `{{TYPE_N}}`, where `N` is a per-type sequential counter.
+
+**Priority Logic**: Inside `extractStaticEntities()`, entities are sorted before overlap removal (`occupied` array):
+1. `isCritical` entities take highest priority (Hard Block keywords first)
+2. Within the same priority level, longer strings take precedence (prevents short strings from incorrectly truncating longer ones)
+
+> **Note**: The default rule set is primarily designed for **Taiwan (ROC)** data formats. Developers are warmly invited to submit Pull Requests to extend coverage for other countries' PII formats (e.g., US SSN, EU GDPR fields, etc.).
+
+| Category | Token Format | Regex Summary | Example |
+|----------|-------------|---------------|---------|
+| National ID (ROC) | `ID_CARD_N` | `[A-Z][12]\d{8}` | A123456789 |
+| ARC / Resident Certificate | `ARC_ID_N` | `[A-Z][A-D89]\d{8}` | A800000014 |
+| ROC Date (written) | `ROC_DATE_N` | `(?:民國\s*)?(\d{2,3})\s*年...` | 民國112年8月15日 |
+| ROC Date (numeric) | `ROC_DATE_NUM_N` | `\b\d{2,3}[\/.-]\d{1,2}[\/.-]\d{1,2}\b` | 112/08/15 |
+| Gregorian Date | `DATE_N` | `\b(19\d{2}\|20\d{2})[-/.年]...` | 2026/08/19 |
+| Mobile Phone (TW) | `PHONE_N` | `09\d{2}-?\d{3}-?\d{3}` | 0912-345-678 |
+| Landline / Extension | `TEL_N` | `0\d{1,2}-?\d{7,8}(?:...)` | 02-23456789#123 |
+| Email Address | `EMAIL_N` | `[a-zA-Z0-9._%+-]+@[...]` | user@mail.edu.tw |
+| Taiwan Address | `ADDRESS_N` | City + District + Street + Number composite Regex | 406 台中市北屯區崇德路三段100號 |
+| Student ID | `STUDENT_ID_N` | `\b\d{9}\b` | 112001001 |
+| Department / Class | `DEPT_CLASS_N` | Department/College/Program + Year/Class group | 資訊工程學系、一年A班 |
+| Academic Score | `SCORE_N` | `\b(?:100(?:\.0+)?|[1-9]?\d(?:\.\d+)?)\s*分` | 85.5分 |
+| Class Rank | `RANK_N` | `(?:全[校系班級]\s*)?第\s*\d+\s*名` | 全系第 3 名 |
+| Percentile Rank (PR) | `PR_N` | `\bPR\s*\d{1,2}\b` | PR 92 |
+| Disciplinary Record | `DISCIPLINE_N` | `(?:予以)?(?:警告|大過|小過|...)` | 警告一次 |
+| School Title / Role | `TITLE_N` | Principal / Dean / Director / Teacher / Homeroom, etc. (composite Regex) | 學務主任 |
+| Form Case Number | `FORM_NUM_N` | `\b\d{8}\b` | 12345678 |
+| Official Document Number | `DOC_NUM_N` | `\b[A-Z]\d{10}\b` | A1234567890 |
+| Vendor / Contractor Name | `VENDOR_N` | `...(?:股份有限公司|有限公司|企業社|...)` | 台灣資訊股份有限公司 |
+| Budget / Expense Amount | `AMOUNT_N` | `NT$...\|...\d+\s*(?:元|萬元)` | 1,250,000 元 |
+
+### 2.2 Hard Block Safety Interlock (`HARD_BLOCK_KEYWORDS`)
+
+The system defines a constant array `HARD_BLOCK_KEYWORDS` containing 36 extremely sensitive terms related to special education needs, child protection, gender-based violence, mental health records, and economic vulnerability. When any of these terms are detected, the system immediately locks down.
+
+**DOM Cascade on Trigger** (`triggerHardBlock()`):
+1. `#hardBlockBanner` becomes visible (red warning banner at the top)
+2. `#copyPromptBtn` is set to `disabled = true` (copy function locked)
+3. `#anonymizedOutput` is set to `disabled = true` + `pointer-events-none`, `select-none`, `opacity-50`, `cursor-not-allowed`
+
+**Unlock Flow**: `openUnlockModal()` → `confirmUnlock()` → `resetHardBlockState()` (restores all DOM states).
+
+AI Channel 2 (risk assessment) can also trigger this flow if it returns `critical: true`.
+
+### 2.3 Custom Dictionary Module (`customDict`)
+
+- **Data Structure**: `customDict` (global array), each entry: `{ type: string, value: string, reason: string, isAi?: boolean }`
+- **Loading Methods**:
+  1. **CSV Upload** (`handleCsvUpload`): Uses `FileReader.readAsText()`, splits line-by-line by `,`. Automatically skips header rows (if the first column contains "關鍵字" / keyword). Automatically strips surrounding double quotes — fully compatible with CSVs exported by the system itself.
+  2. **Online Create / Edit** (`applyOnlineCsv`): Reads from each `.csv-kw-input` / `.csv-type-input` in `#csvEditTbody`. If `type` is left blank, defaults to `'CUSTOM'`.
+  3. **Manual Text Selection**: Select text in the editor, then click "設為機密" (Mark as Confidential) in the floating menu — adds entry with `type: 'CUSTOM'`.
+  4. **AI Return** (`processAnonymizePhase2`): Entities returned by Channel 1 are added with `isAi: true`.
+- **CSV Export**: `downloadOnlineCsv()` outputs UTF-8 with BOM (`\uFEFF`), with keyword fields wrapped in double quotes.
+
+> [!WARNING]
+> **CSV Format Limitation**: The system uses comma (`,`) as the field delimiter with a simple `split(',')` parser. **Keyword values must not contain commas.** If a term itself contains a comma, use the **"Online Dictionary Builder"** (詞庫: N button) to enter it directly.
+
+### 2.4 Local AI Module (Ollama)
+
+- **API Endpoint**: `{ollamaUrl}/api/generate` (POST), default: `http://localhost:11434`
+- **Connection Test Endpoint**: `{ollamaUrl}/api/tags` (GET) — verifies Ollama is running and the target model exists
+- **Default Model Options**: `qwen2.5:3b` (default, recommended), `qwen2.5:1.5b`, `llama3.1`, or custom input
+- **Payload Format**: `{ model, prompt, stream: true, format: "json" }`
+- **Trigger Condition**: Clicking the "透過地端 AI 深度掃描" (Local AI Deep Scan) button, which appears only after Phase 1 (de-identification) is complete
+
+| Channel | Purpose | Prompt Summary | Return Format |
+|---------|---------|----------------|---------------|
+| Channel 1 | Entity Extraction | Identifies person names (with various title/honorific patterns), vendors/shops (including informal names without 公司/Co.), addresses, project names, account numbers | `[{"type":"PERSON","value":"...","reason":"..."}]` |
+| Channel 2 | Risk Assessment | Detects semantically sensitive content (self-harm, sexual assault, domestic violence, counseling records, special education needs, etc.) described in narrative form — even without triggering static hard-block keywords | `{"critical": true/false, "reason": "..."}` |
+
+- **Streaming**: Uses `ReadableStream` + `TextDecoder` to parse NDJSON line-by-line, updating the button text in real time (e.g., `AI 掃描 (1/2) - 已收 N 字`) with `truncate` to prevent overflow.
+- **JSON Fault Tolerance**: Channel 1 supports Array / Object-wrapped Array / single Object response formats.
+- **Error Handling & Protection**:
+  - **Pre-flight Connection Check**: Before scanning, the system verifies Ollama is running. If not, an alert is shown immediately and scanning is aborted.
+  - **Manual Cancel**: During scanning, the button shows "點擊取消" (Click to Cancel) — the user can abort at any time.
+  - **Runaway Output Protection**: The system monitors response character count in real time. If output exceeds the allowed limit (at least 3,000 characters, or 3× the input length), the connection is automatically terminated and a warning is shown.
+  - **Timeout Protection**: If the AI takes more than 3 minutes to respond, a dialog asks the user whether to abort.
+  - Errors and interruptions are shown via `alert()`; the `finally` block always restores button state and hides the spinner.
+
+### 2.5 Restore & Integrity Verification Module
+
+#### `sessionVault` Data Structure
+
+```javascript
+sessionVault = {
+  "{{PERSON_1}}": "王小明",
+  "{{ID_CARD_1}}": "A123456789",
+  "{{TAB_C1_1}}": "(original cell value)",
+  // ...
+}
+```
+
+Token naming rules:
+- Standard rules / dictionary / manual: `{{TYPE_N}}`
+- Table cell masking: `{{TAB_C{col+1}_{row counter}}}`
+
+#### Restore Algorithm (`processRestore()`)
+
+1. Reads text content from `#aiReplyInput`
+2. **Auto-strips system instruction prefix**: Regex-removes any `【系統指令：...】` prefix that the AI may have echoed back
+3. Iterates `sessionVault`, matching each token:
+   - **Exact match**: `replyText.includes(token)` — uses `split().join()` for global replacement
+   - **Fuzzy match 1 (whitespace tolerance)**: Builds `/\{\{\s*TYPE_N\s*\}\}/gi` to allow whitespace around the token
+   - **Fuzzy match 2 (bracket tolerance)**: Builds regex to match `【TYPE_N】`, `(TYPE_N)`, `[TYPE_N]` (full-width and CJK brackets)
+   - **Unmatched**: Added to the `missing` array
+4. Table rows (containing `\t`) are wrapped in dashed outline `<span>` elements
+5. HTML is written to `#restoredOutputView` (`contenteditable="true"`, directly editable)
+
+#### Integrity Feedback (`#integrityStatus`)
+
+- **All restored**: Green "✓ 全數還原成功"
+- **No masking records**: If the user clicks Restore without first running de-identification, a warning dialog prompts them to do so.
+- **Missing items**: Red "⚠ 遺漏 N 項，請查看左側紀錄". Missing tokens are highlighted in **red** in two locations simultaneously:
+  - The corresponding chip in `#readOnlyOriginal` (original text + masking log area) on the left
+  - The corresponding chip in `#restoreChips` (masked item chip list) at the bottom left
+
+#### Three-Way Cross-Reference (`highlightCrossReference()`)
+
+Uses `document.querySelectorAll('[data-token]')` + `getAttribute` to compare tokens, bypassing CSS attribute selector failures caused by curly braces (`{`, `}`), ensuring correct synchronized blue-ring highlighting across all three panels.
+
+#### Mask Toggle (`toggleMask()`)
+
+Each restored token is a clickable `<span>` supporting three-state cycling:
+- **State 0 (Show)**: Displays the original text
+- **State 1 (Full Mask)**: Fills with repeated `#customMaskSymbol` characters (default `■`)
+- **State 2 (Partial Mask)**: Keeps the first and last character; fills the middle with full-width `Ｏ`
+
+---
+
+## III. User Operation Manual
+
+### 3.1 System Requirements
+
+| Item | Requirement |
+|------|-------------|
+| OS | Windows (primary supported environment) |
+| Browser | Chrome / Edge recommended (requires ES2020+, ReadableStream, Clipboard API) |
+| Launch / Network | **General Offline**: Open `EduShield.html` directly.<br>**Air-Gapped / No Internet**: Must have both `EduShield.html` and `style.css` in the same folder (replaces CDN-loaded CSS). |
+| Local AI (Optional) | Install Ollama, download the `qwen2.5:3b` model (recommended — runs well on older or low-memory machines), set environment variable `OLLAMA_ORIGINS = *` |
+
+### 3.2 Standard Operation Flow
+
+> [!IMPORTANT]
+> **Pre-flight Safety Reminder (Zero-Trust Principle)**
+>
+> For real confidential data, **always download the file and run it locally in offline mode**. The GitHub Pages online deployment link is for feature demonstration and rule testing only.
+
+#### Step 1 (Optional): Import or Build Custom Dictionary
+
+The system offers two ways to manage custom terms (e.g., internal project names, staff rosters):
+1. **Import CSV**: Click the **"匯入自訂詞庫 (CSV)"** button at the top of the page to upload a `.csv` file.
+2. **View, Expand & Search**: After loading, click the **`詞庫: N`** button (where N = count) to open the Dictionary Manager. Use the two search boxes to filter by keyword or category; edit or delete entries at any time.
+3. **Online Build & Edit**: Click **"詞庫: N"** at any time to open the editor.
+   - **Pre-populated**: The editor automatically loads all terms currently in memory so you can continue editing from where you left off. Row numbers re-sort automatically after deletion.
+   - **Excel Quick-Paste**: Paste multi-row, multi-column data from Excel directly — the table auto-expands. Pasting a single column into the "Category" field fills only categories without overwriting keywords.
+   - **Keyboard Navigation**: Arrow keys navigate between cells; pressing Enter on the Delete button removes the row and moves focus to the next.
+   - **Dual Export**: Click **"直接套用至系統"** (Apply to System) to apply immediately, or **"下載成 CSV"** (Download as CSV) for future reuse (UTF-8 with BOM output).
+
+#### Step 2: Input Raw Data
+
+1. Paste your document or table content into the **"原始資料輸入"** (Raw Data Input) area on the left.
+2. The system scans in real time (200ms debounce) and highlights detected sensitive terms in color. All matched items appear as chips in the **"偵測項目"** (Detected Items) panel below.
+   > Note: Input longer than 50,000 characters will trigger a performance warning.
+3. To **un-mask a specific term**: Click the `×` on its chip, or select the text and choose "取消遮蔽" (Unmask) from the floating menu.
+4. To **manually mark additional terms**: Select the text, then click "設為機密" (Mark as Confidential) in the floating menu.
+
+#### Step 3 (Optional): Table Masking
+
+When pasted text contains tab-separated (`\t`) table data, the system automatically renders dashed cell borders.
+1. **Single-click** anywhere inside a cell (without selecting text) to show the floating menu with:
+   - `[表格] 遮蔽此儲存格` — Mask this cell
+   - `[表格] 遮蔽整欄` — Mask the entire column
+   - `[表格] 遮蔽整列` — Mask the entire row
+2. Masked cells/columns/rows can be **unmasked** via the same floating menu.
+3. **Chip Support**: Manually masked table cells appear as **indigo chips** (labeled "表格") in the Detected Items panel. Hovering highlights the corresponding cell in the backdrop preview.
+
+   > [!NOTE]
+   > Table cell chips are rendered independently into the chip list and are **not injected** into `activeExtractedEntities`, preventing `processAnonymize` from creating duplicate tokens (both `{{TAB_C_r_c}}` and `{{TABLE_CELL_N}}`). This ensures `sessionVault` entries are unique and restoration is accurate.
+
+#### Step 4: Run De-identification
+
+Click the **"執行去識別化"** (Run De-identification) button. The right panel will display:
+- **Masking Detail Log**: Original text → Token mapping (e.g., `王小明 → {{PERSON_1}}`)
+- **De-identified Output**: The fully tokenized text with a system instruction prefix, ready to copy to an external AI
+- **Three-Way Hover Sync**: Hovering over a chip (bottom-left) or a log entry (right panel) synchronizes all three areas — the corresponding term in the raw input highlights, the chip enlarges, and the log list scrolls to the matching row
+- If a Hard Block keyword is detected, a red warning banner appears at the top and the copy button is locked
+
+#### Step 5 (Optional): Local AI Deep Scan
+
+If Ollama is configured, the **"透過地端 AI 深度掃描"** (Local AI Deep Scan) button (shown after Step 4) enables:
+1. **Channel 1**: Extracts entities that static rules may have missed (person names, vendors, addresses, project names, account numbers)
+2. **Channel 2**: Performs semantic risk assessment for sensitive narratives (self-harm, sexual assault, domestic violence, etc.) — triggers a Hard Block if `critical: true` is returned
+
+#### Step 6: Copy, Send & Restore
+
+1. Click **"複製已遮蔽資料"** (Copy Masked Data) to send the tokenized text (with system instructions) to an external AI (ChatGPT / Claude)
+2. Switch to the **"還原"** (Restore) tab
+3. Paste the AI's reply into the "外部 AI 回覆" (External AI Reply) area (supports "Paste from Clipboard" or "Expand View" modal)
+4. Click **"執行還原"** (Run Restore) — the system automatically matches tokens and restores the original data
+5. The **"還原結果"** (Restore Result) area is a fully editable rich-text zone. Click any restored token to cycle through Show / Partial Mask / Full Mask states
+6. Click **"清除結果"** (Clear Result) to reset the restore area and status bar while preserving the AI reply (so you can tweak and re-restore)
+7. When done, click **"複製還原文字"** (Copy Restored Text) to finalize
+
+### 3.3 Troubleshooting
+
+| Symptom | Likely Cause | Resolution |
+|---------|-------------|------------|
+| Dictionary shows "詞庫: 0" despite successful import | CSV encoding is not UTF-8, or fields contain special characters | Click `詞庫: N` to open the manager and verify data loaded correctly; or use the Online Builder to enter terms directly |
+| Some terms not masked after de-identification | The term is in the whitelist (`whitelist` Set) or does not match any rule | Select the text manually and click "設為機密" |
+| AI scan button unresponsive | Ollama not running or CORS not configured | Go to "系統設定" (System Settings) and run "測試連線" (Test Connection) — check for the green "連線成功！" message |
+| "Abnormal output length" error during AI scan | Model hallucination — generating endless meaningless characters | The system has already auto-terminated. Try switching to a different model or modifying the input |
+| Restore result shows "遺漏 N 項" (N missing) | External AI modified or deleted token tags | Match against the red chips in "原始資料與遮蔽紀錄" (left panel) and manually fill in the missing values in the restore area |
+| Copy button grayed out / disabled | Hard Block triggered (extremely sensitive terms detected) | Click the red banner "查看詳情與解鎖" (View Details & Unlock), verify, and force-unlock; or remove the sensitive terms from the input |
+| Table grid misaligned after pasting | Browser font rendering differences or non-monospace font | Use Chrome / Edge; the highlight editor uses `font-family: monospace` and `tab-size: 4` |
+
+---
+
+## IV. Advanced Developer Information
+
+### 4.1 Adding Custom Hard Block Keywords
+
+Open `EduShield.html` in a text editor, search for `HARD_BLOCK_KEYWORDS`, and add your custom terms to the array.
+
+### 4.2 Adding Custom Detection Rules
+
+Search for `REGEX_RULES` and add a new rule object in the format:
+```javascript
+{ type: "TAG_NAME", regex: /your-regex-here/g, name: "Display Name", example: "Example Match" }
+```
+
+### 4.3 Customizing Default Model Options
+
+Search for `<select id="ollamaModelSelect">` and add your institution's preferred model names to the `<option>` list.
+
+---
+
+### 4.4 Tailwind CSS Local Fallback: Compiling `style.css`
+
+> [!IMPORTANT]
+> When the app is opened in an offline environment, the browser attempts to load `style.css` from the same folder. If it doesn't exist, the failsafe guidance screen is displayed instead.
+
+#### Development Environment Setup (One-time, Already Complete)
+
+> [!NOTE]
+> To keep the project root clean, all Tailwind CSS build tools have been placed in the **`dev/`** subfolder.
+
+The following steps **have already been completed**. The files `dev/package.json`, `dev/tailwind.config.js`, `dev/input.css`, and `dev/node_modules/` already exist — no need to repeat.
+
+```powershell
+# 1. Create and enter the dev folder
+mkdir dev; cd dev
+
+# 2. Initialize npm project and install Tailwind CSS v3
+npm init -y
+npm install --save-dev tailwindcss@3
+```
+
+**`dev/tailwind.config.js`**:
+(Note: `content` path points to the HTML file one level up)
+```javascript
+module.exports = {
+  content: ["../*.html"],
+  theme: { extend: {
+    fontFamily: {
+      sans: ['Inter','ui-sans-serif','system-ui','-apple-system','sans-serif'],
+      mono: ['ui-monospace','Menlo','Monaco','Consolas','monospace'],
+    },
+    colors: { paper: '#FAF9F6', ink: '#292524' },
+  }},
+  plugins: [],
+};
+```
+
+**`dev/input.css`**:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+---
+
+#### Recompile Workflow (Required After Each Change to `EduShield.html`)
+
+> [!IMPORTANT]
+> Whenever Tailwind CSS utility classes are added or modified in `EduShield.html`, you **must** recompile `style.css` to ensure the offline fallback renders correctly.
+
+Open a terminal, navigate to the `dev/` folder, then run:
+
+```powershell
+# Navigate to the dev folder
+cd dev
+
+# Run the build (outputs style.css to the project root)
+npm run build:css
+```
+
+This script is defined in `dev/package.json` under `scripts`, equivalent to:
+```powershell
+tailwindcss -i ./input.css -o ../style.css --minify
+```
+
+For live watch mode during development:
+```powershell
+npm run watch:css
+```
+
+#### Current Project Structure
+
+```text
+EduShield/
+├── EduShield.html                 <- Main application (contains three-tier CSS loading logic)
+├── EduShield_README.md            <- Technical reference (Traditional Chinese)
+├── EduShield_README.en.md         <- Technical reference (English, this file)
+├── EduShield_Test_Scenarios.md    <- Hands-on test scenarios
+├── README.md                      <- Project introduction (English)
+├── README.zh-TW.md                <- Project introduction (Traditional Chinese)
+├── LICENSE                        <- MIT License
+├── .gitignore                     <- Git ignore configuration
+├── .nojekyll                      <- GitHub Pages static site configuration
+├── style.css                      <- ✅ Compiled local CSS fallback (minified)
+└── dev/                           <- 📁 Tailwind build tools
+    ├── input.css                  <- Tailwind entry point
+    ├── tailwind.config.js         <- Tailwind v3 configuration
+    ├── package.json               <- npm project (build:css / watch:css scripts)
+    └── node_modules/              <- tailwindcss@3.x (dev dependency)
+```
+
+> [!NOTE]
+> **When distributing to end users**, only provide the root-level **`EduShield.html`** and **`style.css`** files.
+> All files inside `dev/` and this documentation are for development purposes only — **do not distribute them to general users**.
+
+---
+
+## V. About This Project
+
+* **GitHub Repository**: [oas114/EduShield](https://github.com/oas114/EduShield)
+* **Author**: OA (oas114)
+* **Support the Developer**: [Buy me a coffee on Ko-fi](https://ko-fi.com/oasgrow)
