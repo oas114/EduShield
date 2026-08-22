@@ -7,7 +7,7 @@ If you modify `EduShield.html` and your modifications include ANY changes, addit
 Failure to do so will break the application for users in offline environments.
 
 To recompile:
-1. Open terminal and navigate to the dev tools directory: `cd c:\Projects\EduShield\dev`
+1. Open terminal, navigate to the `dev/` folder inside the project root.
 2. Run the build script: `npm run build:css`
 (This will output the updated `style.css` to the root directory).
 [AI_SYSTEM_INSTRUCTIONS_END]
@@ -40,7 +40,7 @@ To recompile:
 
 ### 2.1 偵測與遮蔽規則庫 (`REGEX_RULES`)
 
-系統內建一個常數陣列 `REGEX_RULES`（第 670 行），每個物件格式為 `{ type, regex, name, example }`。Token 格式為 `{{TYPE_N}}`，其中 `N` 為同類型的流水計數器。
+系統內建一個常數陣列 `REGEX_RULES`，每個物件格式為 `{ type, regex, name, example }`。Token 格式為 `{{TYPE_N}}`，其中 `N` 為同類型的流水計數器。
 
 **優先權邏輯**：`extractStaticEntities()` 中，實體依下列優先順序排序後，再以「占位格」(`occupied` 陣列)去除重疊：
 1. `isCritical` 優先（硬阻斷詞彙最高優先）
@@ -71,7 +71,7 @@ To recompile:
 
 ### 2.2 安全阻斷防線 (`HARD_BLOCK_KEYWORDS`)
 
-系統在第 663 行定義常數陣列 `HARD_BLOCK_KEYWORDS`，包含以下極敏感詞彙（共 36 項）：
+系統定義常數陣列 `HARD_BLOCK_KEYWORDS`，包含以下極敏感詞彙（共 36 項）：
 
 > 自閉症、鑑輔會、性平通報、性騷擾、性侵害、家暴、家庭暴力、保護管束、心理諮商紀錄、特教身分、身心障礙手冊、身心障礙證明、重大傷病、自傷、低收入戶證明、個別化教育計畫、IEP、心評報告、輔導晤談、高關懷個案、學諮中心、自我傷害、自傷舉動、家暴通報、兒少保護、緊急安置、性平會、專案調查小組、中低收入戶、弱勢助學補助、弱勢助學、就學貸款、特教與身心障礙、心理輔導與諮商、兒少保護與家暴事件、性別平等事件、特殊經濟弱勢
 
@@ -311,7 +311,7 @@ module.exports = {
 
 `powershell
 # 進入 dev 資料夾
-cd c:\Projects\EduShield\dev
+cd dev
 
 # 執行編譯（會將 style.css 輸出到上一層的根目錄）
 npm run build:css
@@ -329,17 +329,22 @@ npm run watch:css
 
 #### 目前資料夾結構
 
-`
-c:\Projects\EduShield\
-├── EduShield.html       <- 主程式（含三段混合載入邏輯）
-├── EduShield_README.md  <- 本說明文件
-├── style.css            <- ✅ 已編譯的本地備援樣式表（壓縮版）
-└── dev/                 <- 📁 Tailwind 開發工具資料夾
-    ├── input.css            <- Tailwind 編譯入口
-    ├── tailwind.config.js   <- Tailwind v3 設定
-    ├── package.json         <- npm 專案，含 build:css / watch:css 指令
-    └── node_modules/        <- tailwindcss@3.x (開發依賴)
-`
+```text
+EduShield/
+├── EduShield.html                 <- 主程式（含三段混合載入邏輯）
+├── EduShield_README.md            <- 技術說明手冊（本文件）
+├── EduShield_Test_Scenarios.md    <- 測試情境演練手冊
+├── README.md                      <- 專案介紹文件
+├── LICENSE                        <- 授權條款 (MIT)
+├── .gitignore                     <- Git 忽略設定
+├── .nojekyll                      <- GitHub Pages 靜態網站設定
+├── style.css                      <- ✅ 已編譯的本地備援樣式表（壓縮版）
+└── dev/                           <- 📁 Tailwind 開發工具資料夾
+    ├── input.css                  <- Tailwind 編譯入口
+    ├── tailwind.config.js         <- Tailwind v3 設定
+    ├── package.json               <- npm 專案，含 build:css / watch:css 指令
+    └── node_modules/              <- tailwindcss@3.x (開發依賴)
+```
 
 > [!NOTE]
 > **發佈給使用者時**，只需提供根目錄的 **`EduShield.html`** 與 **`style.css`** 兩個檔案即可。
