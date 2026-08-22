@@ -349,5 +349,5 @@ c:\Projects\EduShield\
 ## 五、關於本專案
 
 * **專案 GitHub 連結**：[oas114/EduShield](https://github.com/oas114/EduShield)
-* **開發者**：OA
+* **開發者**：OA (oas114)
 * **支持開發者**：[小額贊助 Ko-fi](https://ko-fi.com/oasgrow)

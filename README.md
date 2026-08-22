@@ -2,7 +2,7 @@
 
 **「致力於打造零信任個資隱私防護網，讓每個人都能安心且高效地使用 AI。」**
 
- **開發者：** OA |  **<a href="https://ko-fi.com/oasgrow" target="_blank" rel="noopener noreferrer">支持此專案 (Ko-fi 小額贊助)</a>**
+ **開發者：** OA (oas114) |  **<a href="https://ko-fi.com/oasgrow" target="_blank" rel="noopener noreferrer">支持此專案 (Ko-fi 小額贊助)</a>**
 
 ---
 
