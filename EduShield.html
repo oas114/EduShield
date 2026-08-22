@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EduShield 教育隱私保護</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%231e40af'/><stop offset='100%25' stop-color='%233b82f6'/></linearGradient></defs><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' fill='url(%23g)'/></svg>" />
   <!-- ===== Tailwind CSS 混合載入機制 =====
        順位 1：CDN（連網優先）
        順位 2：本地 style.css（斷網備援）
@@ -187,7 +187,12 @@
   <header class="bg-white border-b border-stone-200 sticky top-0 z-20 shadow-sm flex-shrink-0">
     <div class="max-w-[90rem] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center space-x-6">
-        <div>
+        <div class="flex items-center gap-2.5">
+          <div style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
           <h1 class="font-bold text-lg tracking-tight">EduShield <span class="font-normal text-stone-500 text-sm ml-1">教育隱私保護</span></h1>
         </div>
         <!-- 頁籤切換 -->

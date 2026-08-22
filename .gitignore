@@ -1,2 +1,7 @@
 node_modules/
 .DS_Store
+
+# Cloudflare Pages 部署專用目錄與暫存檔 (不上傳 GitHub)
+public/
+landing.html
+demo.html
