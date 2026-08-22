@@ -41,6 +41,7 @@ To recompile:
 | **啟動時清空** | `window.addEventListener('load', ...)` 確保所有 `textarea` 與 `input[type="text"]`（排除 `ollamaUrl`、`ollamaModel`）在載入時清空，防止瀏覽器自動填入歷史資料 |
 | **CSS 框架** | Tailwind CSS，採用「**連網優先、本地備援、防咒引導**」三段降級載入機制：連網時自動載入 CDN；斷網時失敗則讀取同資料夾的 `style.css`；兩者都失敗則顯示全螢幕防咒引導畫面 |
 | **字型** | Inter（系統 sans-serif 堆疊，優先級最高）|
+| **行動裝置支援** | 具備完整的手機版響應式介面（RWD），透過斷點設計與智慧高度調整，在不同尺寸的裝置上皆能獲得順暢的滑動與操作體驗 |
 
 ---
 

@@ -42,6 +42,7 @@ Whenever `EduShield_README.md` is updated, this file MUST be updated to match.
 | **Startup Sanitization** | `window.addEventListener('load', ...)` clears all `textarea` and `input[type="text"]` fields (except `ollamaUrl` and `ollamaModel`) on load, preventing browser autofill from leaking history |
 | **CSS Framework** | Tailwind CSS with a three-tier graceful degradation strategy: **CDN-first → Local fallback (`style.css`) → Failsafe guidance screen** |
 | **Font** | Inter (system sans-serif stack, highest priority) |
+| **Mobile Responsive Support** | Fully responsive interface with intelligent breakpoint design and auto-adjusting heights, ensuring smooth scrolling and operation across various device sizes. |
 
 ---
 

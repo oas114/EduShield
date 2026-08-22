@@ -27,6 +27,10 @@ With generative AI now mainstream, educators, social workers, and administrators
 
 EduShield is a **single static HTML file**. There is no backend, no database, no API server. Everything — regex matching, token replacement, restoration, and AI interaction — runs in your **local browser RAM**.
 
+### Responsive Mobile UI
+
+EduShield features a fully responsive layout tailored for mobile devices. Users can effortlessly use the tool on smartphones or tablets, with smooth scrolling, auto-adjusting text areas, and optimized touch interfaces, while retaining the locked 100vh layout on desktop.
+
 | Property | Detail |
 |----------|--------|
 | **Data Persistence** | Zero. All data is destroyed on page close or refresh. No disk writes, no cloud uploads. |
