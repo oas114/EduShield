@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* The --stone-N, --paper, --ink, --danger-N, --warning-N, --accent-ai-N, --ai-finding-N and
+   --brand-N custom properties that the semantic color tokens below resolve to are NOT defined
+   here. EduShield.html has a hybrid Tailwind-loading strategy (CDN first, this compiled file
+   as the offline fallback) and the CDN tier never loads this stylesheet, so the :root variable
+   block lives directly in EduShield.html's head where both loading tiers can see it.
+   Keep that block and the colors section of tailwind.config.js in sync by hand. */
