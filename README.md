@@ -132,14 +132,14 @@ To add a Hard Block keyword, search for `HARD_BLOCK_KEYWORDS` and add a string t
 
 ## International Sibling Project: TokenShield
 
-If you need something other than Taiwan-education-specific rules — an English-language tool for **individuals or businesses**, with switchable **US / EU (GDPR) / UK** rule presets — check out the sibling project **[TokenShield](./TokenShield_README.md)**.
+If you need something other than Taiwan-education-specific rules — an English-language tool for **individuals or businesses**, with switchable **US / EU (GDPR) / UK** rule presets — check out the sibling project **[TokenShield](https://github.com/oas114/TokenShield)**.
 
 * Reuses the same zero-trust, single-file, Mask → AI → Restore engine as EduShield
 * Switchable regional rule presets (US / EU / UK + an always-on Global baseline), designed to avoid cross-country format collisions
 * Personal / Business persona toggle, each with its own Hard Block keyword set
 * Fully English UI, plus ready-to-copy local AI prompt templates
 
-✨ **[Try the TokenShield Interactive Manual](https://oasgrow.com/TokenShield/)** | Docs: [TokenShield_README.md](./TokenShield_README.md)
+✨ **[Try the TokenShield Interactive Manual](https://oasgrow.com/TokenShield/)** | Docs: [TokenShield_README.md](https://github.com/oas114/TokenShield/blob/main/TokenShield_README.md)
 
 ## Roadmap
 
@@ -148,7 +148,8 @@ EduShield is an open-source public-benefit project. Planned development includes
 1. **Multi-domain Expansion**: Collaborate with contributors across sectors to build domain-specific `REGEX_RULES` and `HARD_BLOCK_KEYWORDS` libraries — enabling rapid deployment of specialized "Shields" beyond education (e.g., MedShield, LawShield).
 2. **Ongoing Maintenance**: Expand and keep the Taiwan-specific PII rule library current.
 3. **AI Integration Research**: Improve local LLM (Ollama) semantic detection accuracy.
-4. ~~**Advanced Editions**: Lay groundwork for future enterprise (with audit logs), personal, and international editions.~~ **Initial version shipped** — see "International Sibling Project: TokenShield" above (personal/business + international). Enterprise-grade features like audit logs are still on the roadmap.
+
+> Cross-product roadmap items (e.g., audit logs, enterprise features) now live in the sibling project **[TokenShield](https://github.com/oas114/TokenShield)**'s roadmap.
 
 ---
 

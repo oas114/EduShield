@@ -65,24 +65,23 @@ EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依
 
 ##  國際版姊妹專案：TokenShield
 
-若您需要的不是台灣教育場域專用規則，而是**面向個人或企業、支援美國／歐盟 GDPR／英國等地區格式**的英文版工具，歡迎試用姊妹專案 **[TokenShield](./TokenShield_README.zh-TW.md)**。
+若您需要的不是台灣教育場域專用規則，而是**面向個人或企業、支援美國／歐盟 GDPR／英國等地區格式**的英文版工具，歡迎試用姊妹專案 **[TokenShield](https://github.com/oas114/TokenShield)**。
 
 * 沿用 EduShield 相同的零信任、單檔案、遮蔽 → AI → 還原引擎
 * 內建可切換的地區規則庫（美國／歐盟／英國 ＋ 永遠開啟的全域底層），避免不同國家格式互相誤判
 * 提供 Personal（個人）／Business（企業）身分模式，各自對應不同的 Hard Block 敏感詞庫
 * 全英文介面，並附上地端 AI 提示詞範本
 
-✨ **[前往 TokenShield 互動式體驗手冊](https://oasgrow.com/TokenShield/)** ｜ 技術文件：[TokenShield_README.zh-TW.md](./TokenShield_README.zh-TW.md)
+✨ **[前往 TokenShield 互動式體驗手冊](https://oasgrow.com/TokenShield/)** ｜ 技術文件：[TokenShield_README.zh-TW.md](https://github.com/oas114/TokenShield/blob/main/TokenShield_README.zh-TW.md)
 
 ##  未來規劃
 
-EduShield 目前作為公益開源專案提供給大眾使用。
-
-未來的開發藍圖包含：
+EduShield 目前作為公益開源專案提供給大眾使用，未來的開發藍圖包含：
 1. **開發各領域版本：** 與各領域貢獻者合作，快速制定各領域專屬的個資正則表達式（Regex）規則庫及硬阻斷詞庫，以求快速部署至不同產業。雖然目前專案名為 EduShield（教育防護盾），但未來期盼能以此架構為基礎，發展出各領域專屬的 Shield。
 2. **持續維護與更新：** 擴充台灣專屬的個資正則表達式（Regex）規則庫，確保防護網與時俱進。
 3. **技術研發：** 完善地端 AI（Ollama）的混合防禦機制，提升語意辨識精準度。
-4. ~~**推動進階版本：** 協助專案邁向未來具備稽核日誌的「企業版」、「個人版」以及支援全球市場的「國際版」。~~ **已初步實現**：見上方「國際版姊妹專案：TokenShield」（個人／企業版 + 國際版），後續將持續擴充稽核日誌等企業級功能。
+
+> 跨產品線的後續規劃（例如稽核日誌、企業版等進階功能）以姊妹專案 **[TokenShield](https://github.com/oas114/TokenShield)** 的未來規劃為主。
 
 ##  聯絡作者與贊助支持
 
