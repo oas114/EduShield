@@ -17,9 +17,11 @@
 
 ## Why EduShield?
 
-With generative AI now mainstream, educators, social workers, and administrators face a critical dilemma: they want to use AI (ChatGPT, Claude, etc.) to handle paperwork more efficiently, but cannot risk exposing students' personal data or confidential records, which may violate data protection laws.
+When you paste a student's term-end comments, counseling records, or disciplinary notes into ChatGPT to help polish the wording, do you actually know what happens to that data afterward?
 
-**EduShield** solves this with a complete three-stage privacy-safe AI workflow: **Mask → Send → Restore** — and it runs entirely inside your browser without sending a single byte to any server.
+Most people don't — and the answer depends on which AI, and which plan, you're using.
+
+**EduShield** removes the guesswork. Mask the sensitive parts into tokens before you send anything — the original content never leaves your device from start to finish. **Mask → Send → Restore**, entirely inside your browser.
 
 ---
 
