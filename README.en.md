@@ -40,6 +40,10 @@ EduShield features a fully responsive layout tailored for mobile devices. Users 
 | **Network** | Fully optional. Works completely offline. Local AI (Ollama) connects only to `http://localhost:11434` (loopback). |
 | **Startup Safety** | All input fields are cleared on load to prevent browser autofill from leaking previous session data. |
 
+### How Do I Know This Is Actually Safe? Ask an AI.
+
+You don't need to read code, and you shouldn't just take our word for it. EduShield is a single HTML file with no background network calls and no dependencies to install — copy the entire source of `EduShield.html` and paste it into any AI you already use (ChatGPT, Claude, etc.), then ask it directly: "Does this page send any user input to a server?" Let the AI verify it for you, rather than trusting the developer's claims alone. The in-app "Education Privacy Protection Guide" carries the same reminder.
+
 ### Hybrid Defense Engine
 
 **Layer 1 — Static Regex Fast-Match**
