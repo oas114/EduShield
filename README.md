@@ -124,9 +124,9 @@ To add a Hard Block keyword, search for `HARD_BLOCK_KEYWORDS` and add a string t
 
 | Document | Description |
 |----------|-------------|
-| 📖 [EduShield_README.en.md](./EduShield_README.en.md) | Full technical reference — modules, APIs, data structures, developer guide (English) |
-| 📖 [EduShield_README.md](./EduShield_README.md) | Full technical reference (Traditional Chinese) |
-| 🧪 [EduShield_Test_Scenarios.md](./EduShield_Test_Scenarios.md) | 12 hands-on test scenarios covering all major features (Traditional Chinese) |
+| 📖 [docs/EduShield_README.en.md](./docs/EduShield_README.en.md) | Full technical reference — modules, APIs, data structures, developer guide (English) |
+| 📖 [docs/EduShield_README.md](./docs/EduShield_README.md) | Full technical reference (Traditional Chinese) |
+| 🧪 [docs/EduShield_Test_Scenarios.md](./docs/EduShield_Test_Scenarios.md) | 12 hands-on test scenarios covering all major features (Traditional Chinese) |
 
 ---
 

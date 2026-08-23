@@ -58,10 +58,10 @@ EduShield 的核心精神為**「離線使用的極致隱私安全」**。請依
 
 為了讓您能快速熟悉並體驗 EduShield 的各項強大功能，我準備了 12 種涵蓋日常教育行政與輔導工作的測試情境（包含基本個資遮蔽、表格排版、硬阻斷防護及地端 AI 深度掃描等）。
 
-強烈建議您前往查閱 **[EduShield 系統測試情境演練手冊 (EduShield_Test_Scenarios.md)](./EduShield_Test_Scenarios.md)**，您可以直接複製手冊中的範例資料進行實機操作測試，快速掌握系統的使用訣竅！
+強烈建議您前往查閱 **[EduShield 系統測試情境演練手冊 (docs/EduShield_Test_Scenarios.md)](./docs/EduShield_Test_Scenarios.md)**，您可以直接複製手冊中的範例資料進行實機操作測試，快速掌握系統的使用訣竅！
 
 >  **進階使用者與開發者請注意：**
-> 關於自訂詞庫 (CSV) 格式、地端 AI (Ollama) 串接端點設定、正則表達式增修等詳細技術規格，請參閱完整的 **[EduShield 技術說明手冊 (EduShield_README.md)](./EduShield_README.md)**。
+> 關於自訂詞庫 (CSV) 格式、地端 AI (Ollama) 串接端點設定、正則表達式增修等詳細技術規格，請參閱完整的 **[EduShield 技術說明手冊 (docs/EduShield_README.md)](./docs/EduShield_README.md)**。
 
 ##  國際版姊妹專案：TokenShield
 
