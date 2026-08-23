@@ -1193,8 +1193,9 @@
       document.head.appendChild(s);
     }
 
-    function reloadConfig() {
-      if (!confirm('重新載入將清除您目前手動編輯過的自訂規則與詞庫，並重新套用內建預設值與自動載入檔（如果存在）。確定要繼續嗎？')) return;
+    async function reloadConfig() {
+      const ok = await showConfirmModal('重新載入將清除您目前手動編輯過的自訂規則與詞庫，並重新套用內建預設值與自動載入檔（如果存在）。確定要繼續嗎？', { danger: true, okLabel: '重新載入' });
+      if (!ok) return;
       initCustomProtectionState();
       loadAutoConfig(() => {
         document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
@@ -1202,7 +1203,7 @@
         renderRegexMgmtTable();
         renderAiPromptTextareas();
         triggerPreview();
-        alert('已重新載入設定檔。');
+        showToast('已重新載入設定檔。', 'success');
       });
     }
 
@@ -1366,7 +1367,7 @@
     let pendingImport = null; // { dimension: 'roster'|'hardBlock'|'regex', rows: [...] }
 
     function openImportDialog(dimension, rows) {
-      if (!rows.length) { alert('檔案中沒有可用的資料列。'); return; }
+      if (!rows.length) { showToast('檔案中沒有可用的資料列。', 'warning'); return; }
       pendingImport = { dimension, rows };
 
       const dimensionLabel = { roster: '名冊/詞庫', hardBlock: '硬阻斷關鍵字', regex: '正則規則' }[dimension];
@@ -1417,7 +1418,7 @@
       pendingImport = null;
       closeModal('importModeModal');
       triggerPreview();
-      alert('匯入完成。');
+      showToast('匯入完成。', 'success');
     }
 
     // ==========================================
@@ -1517,6 +1518,49 @@
       setTimeout(() => m.classList.add('hidden'), 300);
     }
 
+    // 通用確認 modal（取代 window.confirm）— 回傳 Promise<boolean>。
+    let _genericConfirmResolve = null;
+    function showConfirmModal(message, opts = {}) {
+      const { title = '請確認', okLabel = '確定', cancelLabel = '取消', danger = false } = opts;
+      document.getElementById('genericConfirmTitle').textContent = title;
+      document.getElementById('genericConfirmMessage').textContent = message;
+      document.getElementById('genericConfirmCancelBtn').textContent = cancelLabel;
+      const okBtn = document.getElementById('genericConfirmOkBtn');
+      okBtn.textContent = okLabel;
+      okBtn.className = danger
+        ? 'px-4 py-2 bg-danger-600 hover:bg-danger-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors'
+        : 'px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors';
+      openModal('genericConfirmModal');
+      return new Promise(resolve => { _genericConfirmResolve = resolve; });
+    }
+    function _resolveGenericConfirm(result) {
+      closeModal('genericConfirmModal');
+      if (_genericConfirmResolve) { _genericConfirmResolve(result); _genericConfirmResolve = null; }
+    }
+
+    // 提示 Toast（取代 window.alert）— 不阻塞畫面，自動消失。
+    const TOAST_STYLES = {
+      info: 'border-line text-ink',
+      success: 'border-brand-200 text-ink',
+      danger: 'border-danger-200 text-danger-800',
+      warning: 'border-warning-200 text-warning-800',
+    };
+    function showToast(message, variant = 'info') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto max-w-sm w-full bg-white ${TOAST_STYLES[variant] || TOAST_STYLES.info} border rounded-lg shadow-lg px-4 py-3 text-sm flex items-start gap-2 transition-all duration-300 opacity-0 translate-y-2`;
+      el.innerHTML = `<span class="flex-1 whitespace-pre-line">${escapeHtml(message)}</span><button class="text-ink-faint hover:text-ink-hover flex-shrink-0 font-medium" aria-label="關閉">&times;</button>`;
+      el.querySelector('button').onclick = () => removeToast(el);
+      container.appendChild(el);
+      requestAnimationFrame(() => { el.classList.remove('opacity-0', 'translate-y-2'); });
+      el._timer = setTimeout(() => removeToast(el), 4000);
+    }
+    function removeToast(el) {
+      clearTimeout(el._timer);
+      el.classList.add('opacity-0');
+      setTimeout(() => el.remove(), 300);
+    }
+
     function openSettings() { openModal('settingsModal'); }
     function closeSettings() { closeModal('settingsModal'); }
     function openGuide() {
@@ -1588,7 +1632,7 @@
           document.getElementById("aiReplyInput").value = text;
         }
       } catch (err) {
-        alert("無法讀取剪貼簿，請確認瀏覽器已允許剪貼簿讀取權限，或直接使用 Ctrl+V 貼上。");
+        showToast("無法讀取剪貼簿，請確認瀏覽器已允許剪貼簿讀取權限，或直接使用 Ctrl+V 貼上。", 'danger');
       }
     }
 
@@ -1817,7 +1861,7 @@
     function applyOnlineCsv() {
       const data = getOnlineCsvData();
       if (data.length === 0) {
-        alert("表格為空或沒有輸入任何關鍵字！");
+        showToast("表格為空或沒有輸入任何關鍵字！", 'warning');
         return;
       }
       
@@ -1827,7 +1871,7 @@
       });
       
       document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
-      alert(`成功套用 ${customDict.length} 筆自訂詞庫！`);
+      showToast(`成功套用 ${customDict.length} 筆自訂詞庫！`, 'success');
       closeEditCsvModal();
       triggerPreview();
     }
@@ -1835,7 +1879,7 @@
     function downloadOnlineCsv() {
       const data = getOnlineCsvData();
       if (data.length === 0) {
-        alert("表格為空，沒有資料可以匯出！");
+        showToast("表格為空，沒有資料可以匯出！", 'warning');
         return;
       }
       
@@ -2447,7 +2491,7 @@
         const checkRes = await fetch(`${url}/api/tags`);
         if (!checkRes.ok) throw new Error();
       } catch (err) {
-        alert("無法連線，地端 AI (Ollama) 可能未啟動或未設定 CORS。請先啟動 Ollama。");
+        showToast("無法連線，地端 AI (Ollama) 可能未啟動或未設定 CORS。請先啟動 Ollama。", 'danger');
         phase2IsRunning = false;
         return;
       }
@@ -2462,9 +2506,9 @@
       if (btnText) btnText.textContent = 'AI 掃描 (1/2 啟動) - 點擊取消';
 
       // 問題⑨： AbortController + 3 分鐘逆時，過時後尋問用戶是否中止
-      let timeoutHandle = setTimeout(() => {
-        const keepGoing = confirm(`AI 回應超過 3 分鐘尚未完成。\n\n點擊「確定」將中止讀取；點擊「取消」將繼續等待。`);
-        if (keepGoing) controller.abort();
+      let timeoutHandle = setTimeout(async () => {
+        const shouldAbort = await showConfirmModal('AI 回應超過 3 分鐘尚未完成。', { title: '仍在等待', okLabel: '中止讀取', cancelLabel: '繼續等待' });
+        if (shouldAbort) controller.abort();
       }, 3 * 60 * 1000);
 
       // 動態容許上限 (至少 3000 字，或是輸入文字的 3 倍)
@@ -2639,17 +2683,17 @@
 
         if (criticalReasons.length > 0) {
             triggerHardBlock(criticalReasons);
-            alert(`掃描完成！\n新增了 ${newCount} 個實體遮蔽項目。\n發現特敏風險，已強制鎖定複製功能！`);
+            showToast(`掃描完成！\n新增了 ${newCount} 個實體遮蔽項目。\n發現特敏風險，已強制鎖定複製功能！`, 'warning');
         } else {
-            alert(`掃描完成！新增了 ${newCount} 個實體遮蔽項目。未發現額外特敏風險。`);
+            showToast(`掃描完成！新增了 ${newCount} 個實體遮蔽項目。未發現額外特敏風險。`, 'success');
         }
 
       } catch (err) {
         if (err.name === 'AbortError') {
-          alert('AI 掃描已中止。');
+          showToast('AI 掃描已中止。', 'info');
         } else {
           console.error(err);
-          alert("AI 掃描失敗：\n" + err.message);
+          showToast("AI 掃描失敗：\n" + err.message, 'danger');
         }
       } finally {
         clearTimeout(timeoutHandle);
@@ -2727,8 +2771,8 @@
 
     function processRestore() {
       let replyText = document.getElementById("aiReplyInput").value;
-      if (!replyText.trim()) return alert("請先貼上外部 AI 回覆");
-      if (Object.keys(sessionVault).length === 0) return alert("尚無遮蔽紀錄，請先於「去識別化處理」頁籤執行打包。");
+      if (!replyText.trim()) return showToast("請先貼上外部 AI 回覆", 'warning');
+      if (Object.keys(sessionVault).length === 0) return showToast("尚無遮蔽紀錄，請先於「去識別化處理」頁籤執行打包。", 'warning');
 
       // 自動移除 AI 可能照抄回來的系統指令前綴與空行
       replyText = replyText.replace(/^【系統指令：本段文字已去識別化。請保留所有 \{\{TAG_X\}\} 代碼，並維持原始表格 Tab \(\\t\) 排版！】\s*/, "");
@@ -2781,7 +2825,7 @@
 
     function copyAnonymizedPrompt() {
       const text = document.getElementById("anonymizedOutput").value;
-      if(text) navigator.clipboard.writeText(text).then(() => alert("已複製提示詞！"));
+      if(text) navigator.clipboard.writeText(text).then(() => showToast("已複製提示詞！", 'success'));
     }
     function clearRestoredResult() {
       document.getElementById("restoredOutputView").innerHTML = "";
@@ -2792,7 +2836,7 @@
 
     function copyRestoredResult() {
       const text = document.getElementById("restoredOutputView").innerText;
-      if(text) navigator.clipboard.writeText(text).then(() => alert("已複製還原結果！"));
+      if(text) navigator.clipboard.writeText(text).then(() => showToast("已複製還原結果！", 'success'));
     }
     function copyPsCommand() {
       const cmd = document.getElementById("psCommand").innerText;
@@ -2841,5 +2885,25 @@
     });
 
   </script>
+
+  <!-- ==================== 通用確認 Modal（由 JS 驅動） ==================== -->
+  <div id="genericConfirmModal" class="hidden fixed inset-0 bg-scrim/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-line">
+      <div class="px-6 py-4 border-b border-line-soft flex justify-between items-center bg-paper-sunken flex-shrink-0">
+        <h2 id="genericConfirmTitle" class="text-sm font-bold text-ink">請確認</h2>
+        <button onclick="_resolveGenericConfirm(false)" class="text-ink-faint hover:text-ink-hover font-medium text-lg">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto">
+        <p id="genericConfirmMessage" class="text-sm text-ink-hover whitespace-pre-line"></p>
+      </div>
+      <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex justify-end gap-3 flex-shrink-0">
+        <button id="genericConfirmCancelBtn" onclick="_resolveGenericConfirm(false)" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">取消</button>
+        <button id="genericConfirmOkBtn" onclick="_resolveGenericConfirm(true)" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示 Toast（取代 window.alert） -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-[120] flex flex-col gap-2 items-end pointer-events-none"></div>
 </body>
 </html>
