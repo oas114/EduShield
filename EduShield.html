@@ -225,9 +225,6 @@
         <button id="manageProtectionBtn" onclick="openProtectionManagerModal()" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors">
           管理自訂防護規則
         </button>
-        <button id="reloadConfigBtn" onclick="reloadConfig()" title="清除手動編輯，重新套用內建預設值與同資料夾的自動載入設定檔" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors">
-          重新載入設定檔
-        </button>
       </div>
     </div>
   </header>
@@ -590,8 +587,8 @@
             <li>點擊工具列的<strong>「管理自訂防護規則」</strong>，切換到「硬阻斷詞彙」或「正則規則」分頁。</li>
             <li>下載該分頁的 CSV 範本，依格式填入您的詞彙或正規表示式後存檔。</li>
             <li>點「匯入 CSV」選擇該檔案，依需求選擇「新增並合併」或「完全取代」。</li>
-            <li>若希望往後每次開啟都自動套用，可在同一個管理介面點「轉存為自動載入檔」，並將下載的 <code class="bg-white border border-stone-200 px-1 rounded">edushield.config.js</code> 放到與 <code class="bg-white border border-stone-200 px-1 rounded">EduShield.html</code> 相同的資料夾。</li>
-            <li>若手動修改後想恢復成內建預設值，點工具列的「重新載入設定檔」即可。</li>
+            <li>若希望往後每次開啟都自動套用，可在同一個管理介面展開「進階設定」（僅桌面版顯示）點「轉存為自動載入檔」，並將下載的 <code class="bg-white border border-stone-200 px-1 rounded">edushield.config.js</code> 放到與 <code class="bg-white border border-stone-200 px-1 rounded">EduShield.html</code> 相同的資料夾，並以本機檔案方式開啟才會生效。</li>
+            <li>若手動修改後想恢復成內建預設值，在「管理自訂防護規則」展開「進階設定」點「重新載入設定檔」即可（僅桌面版顯示）。</li>
           </ol>
         </div>
         
@@ -784,9 +781,25 @@
           </div>
         </div>
       </div>
-      <div class="px-6 py-4 border-t border-stone-100 bg-stone-50 flex justify-between items-center gap-3 flex-shrink-0">
-        <button id="exportAutoConfigBtn" onclick="exportAutoConfig()" title="把目前記憶體中的自訂規則與提示詞打包成可自動載入的設定檔" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">轉存為自動載入檔</button>
-        <button onclick="closeModal('protectionManagerModal')" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">關閉</button>
+      <div class="border-t border-stone-100 bg-stone-50 flex-shrink-0">
+        <details class="hidden sm:block group">
+          <summary class="px-6 py-3 text-xs font-semibold text-stone-600 cursor-pointer hover:bg-stone-100 select-none flex items-center justify-between">
+            <span>進階設定：自動載入設定檔</span>
+            <span class="text-stone-400 transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          <div class="px-6 pb-4 space-y-3">
+            <p id="autoConfigNetworkNotice" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 leading-relaxed">
+              此功能僅在您將本頁面下載為本機 HTML 檔案並直接開啟時才會自動生效；您目前是透過網址瀏覽，「轉存為自動載入檔」仍可下載設定檔，但需另外下載本頁面並與設定檔放在同一資料夾，才會自動套用。
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button id="exportAutoConfigBtn" onclick="exportAutoConfig()" title="把目前記憶體中的自訂規則與提示詞打包成可自動載入的設定檔" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">轉存為自動載入檔</button>
+              <button id="reloadConfigBtn" onclick="reloadConfig()" title="清除手動編輯，重新套用內建預設值與同資料夾的自動載入設定檔" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">重新載入設定檔</button>
+            </div>
+          </div>
+        </details>
+        <div class="px-6 py-3 flex justify-end">
+          <button onclick="closeModal('protectionManagerModal')" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">關閉</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1346,6 +1359,10 @@
     loadAutoConfig(() => {
       document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
     });
+    if (location.protocol !== 'file:') {
+      const autoConfigNetworkNotice = document.getElementById('autoConfigNetworkNotice');
+      if (autoConfigNetworkNotice) autoConfigNetworkNotice.classList.remove('hidden');
+    }
 
     // ==========================================
     // UI 控制與頁籤切換

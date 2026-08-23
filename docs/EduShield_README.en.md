@@ -222,9 +222,11 @@ window.EDUSHIELD_AUTO_CONFIG = {
 };
 ```
 
-The toolbar's "**Reload Config**" button prompts for confirmation, then resets all four dimensions to their built-in defaults and re-runs the auto-load step above — useful for discarding this session's manual edits and returning to the "as-launched" state.
+Both actions live inside a collapsible "Advanced Settings: Auto-load Config File" section at the bottom of the "Manage Custom Protection Rules" panel — hidden below desktop viewport widths (the same-folder workflow isn't practical on mobile), and showing an inline notice when the page is loaded via a URL instead of a local file, since the feature only takes effect for local `file://` usage.
 
-The "**Export as Auto-load File**" button at the bottom of the "Manage Custom Protection Rules" panel packages the current in-memory state of all four dimensions (including every merge/override result) into the same config format for download, with the fixed filename `edushield.config.js` — drop it next to `EduShield.html` and it will be picked up automatically on the next launch, or via "Reload Config".
+The "**Reload Config**" button there prompts for confirmation, then resets all four dimensions to their built-in defaults and re-runs the auto-load step above — useful for discarding this session's manual edits and returning to the "as-launched" state.
+
+The "**Export as Auto-load File**" button packages the current in-memory state of all four dimensions (including every merge/override result) into the same config format for download, with the fixed filename `edushield.config.js` — drop it next to `EduShield.html` and it will be picked up automatically on the next launch, or via "Reload Config".
 
 > [!NOTE]
 > This mechanism deliberately only handles rule/prompt configuration — it never touches the actual document content the user types in. `sessionVault`, the raw input textarea, etc. still fully honor the existing zero-trust, zero-persistence promise and vanish on page close or refresh.
