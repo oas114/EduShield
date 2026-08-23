@@ -47,9 +47,9 @@ To recompile:
 
 ## 二、核心模組與技術規格
 
-### 2.1 偵測與遮蔽規則庫 (`REGEX_RULES`)
+### 2.1 偵測與遮蔽規則庫 (`REGEX_RULES_DEFAULT`)
 
-系統內建一個常數陣列 `REGEX_RULES`，每個物件格式為 `{ type, regex, name, example }`。Token 格式為 `{{TYPE_N}}`，其中 `N` 為同類型的流水計數器。
+系統內建一個凍結的常數陣列 `REGEX_RULES_DEFAULT`（`Object.freeze`），每個物件格式為 `{ type, regex, name, example }`，做為「重新載入設定檔」的復原基準。偵測邏輯實際讀取的是由此建構出的即時運作狀態 `regexRules`（每筆多帶 `pattern`／`flags`／`source` 欄位），可透過「管理自訂防護規則」介面擴充，詳見 2.6 節。Token 格式為 `{{TYPE_N}}`，其中 `N` 為同類型的流水計數器。
 
 **優先權邏輯**：`extractStaticEntities()` 中，實體依下列優先順序排序後，再以「占位格」(`occupied` 陣列)去除重疊：
 1. `isCritical` 優先（硬阻斷詞彙最高優先）
@@ -78,9 +78,9 @@ To recompile:
 | 廠商名稱 | `VENDOR_N` | `...(?:股份有限公司|有限公司|企業社|...)` | 台灣資訊股份有限公司 |
 | 經費金額 | `AMOUNT_N` | `NT$...|...\d+\s*(?:元|萬元)` | 1,250,000 元 |
 
-### 2.2 安全阻斷防線 (`HARD_BLOCK_KEYWORDS`)
+### 2.2 安全阻斷防線 (`HARD_BLOCK_KEYWORDS_DEFAULT`)
 
-系統定義常數陣列 `HARD_BLOCK_KEYWORDS`，包含以下極敏感詞彙（共 36 項）：
+系統定義凍結的常數陣列 `HARD_BLOCK_KEYWORDS_DEFAULT`（`Object.freeze`），包含以下極敏感詞彙（共 36 項）做為內建預設值；偵測邏輯實際讀取的是即時運作狀態 `hardBlockKeywords`（每筆帶 `source` 欄位），可透過「管理自訂防護規則」介面擴充，詳見 2.6 節：
 
 > 自閉症、鑑輔會、性平通報、性騷擾、性侵害、家暴、家庭暴力、保護管束、心理諮商紀錄、特教身分、身心障礙手冊、身心障礙證明、重大傷病、自傷、低收入戶證明、個別化教育計畫、IEP、心評報告、輔導晤談、高關懷個案、學諮中心、自我傷害、自傷舉動、家暴通報、兒少保護、緊急安置、性平會、專案調查小組、中低收入戶、弱勢助學補助、弱勢助學、就學貸款、特教與身心障礙、心理輔導與諮商、兒少保護與家暴事件、性別平等事件、特殊經濟弱勢
 
@@ -95,16 +95,13 @@ AI 通道二（風險判定）也可能觸發此流程（若 AI 回傳 `critical
 
 ### 2.3 自訂詞庫模組 (`customDict`)
 
-- **資料結構**：`customDict`（全域陣列），每項為 `{ type: string, value: string, reason: string, isAi?: boolean }`
+- **資料結構**：`customDict`（全域陣列），每項為 `{ type: string, value: string, reason: string, isAi?: boolean, source: string }`
 - **載入途徑**：
-  1. **CSV 上傳** (`handleCsvUpload`)：使用 `FileReader.readAsText()` 讀取，逐行以 `,` 分割，自動跳過標題列（若首欄含「關鍵字」）。系統已具備自動去除雙引號機制，完美相容系統匯出與下載的 CSV 檔案。
-  2. **線上建立/編輯** (`applyOnlineCsv`)：從 `#csvEditTbody` 的每個 `.csv-kw-input` / `.csv-type-input` 讀取，type 留空時預設為 `'CUSTOM'`
+  1. **CSV 上傳** (`handleCsvUpload`)：使用 `FileReader.readAsText()` 讀取，透過 `parseCsvLine()` 解析（支援標準 CSV 雙引號跳脫，欄位值可含逗號），自動跳過標題列（若首欄含「關鍵字」）。解析完成後會交由「合併/取代/取消」對話框處理，不再直接整批覆蓋，詳見 2.6 節。
+  2. **線上建立/編輯** (`applyOnlineCsv`)：從 `#csvEditTbody` 的每個 `.csv-kw-input` / `.csv-type-input` 讀取，type 留空時預設為 `'CUSTOM'`（此途徑維持原本的整批覆蓋行為，不經過合併對話框）
   3. **手動選取加入**：滑鼠選取文字後在浮動選單點擊「設為機密」，以 `type: 'CUSTOM'` 加入
-  4. **AI 回傳** (`processAnonymizePhase2`)：通道一回傳的實體會以 `isAi: true` 加入
-- **CSV 下載**：`downloadOnlineCsv()` 輸出 UTF-8 with BOM（`\uFEFF`），關鍵字欄以雙引號包覆
-
-> [!WARNING]
-> **CSV 格式限制**：系統以逗號（`,`）作為欄位分隔符號，解析時採簡單 `split(',')` 邏輯。**關鍵字欄位值中不可含有逗號**，否則該筆資料將被錯誤分割，導致詞彙載入異常。若詞彙本身含有逗號（如公司全名含頓號），請改用「**線上建立詞庫**」功能直接輸入。
+  4. **AI 回傳** (`processAnonymizePhase2`)：通道一回傳的實體會以 `isAi: true`、`source: 'ai-session'` 加入，屬於當次文件的暫存結果，「轉存為自動載入檔」時會被排除
+- **CSV 下載**：`downloadOnlineCsv()` 輸出 UTF-8 with BOM，關鍵字欄以雙引號包覆；空白範本則由 `downloadCsvTemplate()` 提供（檔名 `EduShield_詞庫範本.csv`，與匯出檔案分開命名，避免互相覆蓋）
 
 ### 2.4 地端 AI 模組（Ollama）
 
@@ -169,6 +166,61 @@ Token 格式規則：
 - **狀態 0（顯示）**：顯示原始文字
 - **狀態 1（完全遮蔽）**：以 `#customMaskSymbol`（預設 `■`）重複填充
 - **狀態 2（部分遮蔽）**：保留首末字，中間以全形 `Ｏ` 填充
+
+### 2.6 自訂防護管理系統（四大維度）
+
+點擊工具列的「**管理自訂防護規則**」，可對以下四個維度進行自訂、匯入與匯出，不需要手動編輯 HTML 原始碼：
+
+1. **名冊/詞庫**（`customDict`，見 2.3 節）
+2. **硬阻斷詞彙**：獨立管理分頁，CSV 格式為單欄（`關鍵字`）
+3. **正則規則**：獨立管理分頁，CSV 格式為 4 欄（`替換標籤,規則名稱,正規表示式,說明範例`）；「正規表示式」欄可填純 pattern（預設補上 `g` flag）或完整的 `/pattern/flags` 字面量格式字串
+4. **地端 AI 提示詞**：「地端 AI 提示詞」分頁提供通道一/通道二兩個文字框，可直接檢視、編輯目前生效的提示詞內容，並可一鍵「重設為預設值」；提示詞中的 `{{TEXT}}` 佔位符會在實際呼叫時被替換為待掃描文字
+
+#### 資料模型
+
+系統將內建預設值凍結為 `HARD_BLOCK_KEYWORDS_DEFAULT`／`REGEX_RULES_DEFAULT`／`AI_PROMPTS_DEFAULT`，另外維護三個「即時運作狀態」變數供偵測邏輯實際讀取：
+```javascript
+let hardBlockKeywords = []; // [{ value, source }]
+let regexRules = [];        // [{ type, pattern, flags, name, example, source }]
+let aiPrompts = { channel1: '', channel2: '' };
+```
+`source` 欄位標示每筆規則的來源，並在管理介面與「教育隱私保護指南」中以徽章顯示：`內建預設`／`腳本自動載入`／`手動匯入`／`自訂覆蓋`（`customDict` 另有一個內部用的 `ai-session` 標籤，代表當次 AI 擷取的暫存結果，匯出設定檔時會被排除）。
+
+正則規則不再直接持有 `RegExp` 物件，而是拆成 `pattern`（`regex.source`）與 `flags`（`regex.flags`）兩個字串欄位，因為 CSV／JSON 設定檔只能承載字串；每次重建 `RegExp` 都經過 `tryCompileRegexRow()` 的 try/catch 保護，格式錯誤的規則會被略過並個別回報錯誤，不會讓整個掃描流程中斷。
+
+#### 合併/取代/取消（Pattern 為唯一鍵）
+
+透過「管理自訂防護規則」匯入 CSV 時（硬阻斷詞彙、正則規則皆適用；名冊的「匯入自訂詞庫」按鈕行為已同步升級，「線上建立詞庫」則維持原本的整批覆蓋），若該維度已有既有資料，會跳出選擇對話框：
+- **新增並合併**：保留現有項目，新資料追加進去；若正則的 **pattern 字串**（不含 flags）或名冊/硬阻斷的**字串值**與既有項目相同，則以新資料完全覆蓋（標籤變為「自訂覆蓋」），名稱、標籤、範例等其他欄位一併被取代。
+- **完全取代**：清空該維度所有既有項目（含內建預設），改以本次匯入的內容為準。
+- **取消**：不做任何變更。
+
+正則規則匯入時，任何無法通過 `new RegExp()` 驗證的列會被單獨列出、跳過，不影響同一批次中其他合法列的匯入。
+
+#### 同資料夾自動載入設定檔
+
+系統啟動時，會嘗試以 `<script src="edushield.config.js">` 動態載入與 `EduShield.html` 同資料夾的 `edushield.config.js`（機制仿照既有 Tailwind CDN／本地 `style.css` 的降級載入 IIFE）：
+- **檔案不存在**：靜默略過，僅在瀏覽器 Console 顯示提示訊息，不影響一般使用者
+- **檔案存在但有語法錯誤**：不會讓系統崩潰，僅在 Console 顯示警告並維持內建預設值
+- **檔案正常**：內容會以「新增並合併」的邏輯套用（來源標籤為「腳本自動載入」）
+
+設定檔格式範例：
+```javascript
+window.EDUSHIELD_AUTO_CONFIG = {
+  version: 1,
+  roster: [ { type: "VENDOR", value: "...", reason: "..." } ],
+  hardBlock: [ "自訂硬阻斷詞彙A" ],
+  regexRules: [ { type: "CUSTOM_CODE", pattern: "CODE-\\d{4}", flags: "g", name: "自訂代碼", example: "CODE-1234" } ],
+  aiPrompts: { channel1: "...{{TEXT}}", channel2: "...{{TEXT}}" }
+};
+```
+
+工具列的「**重新載入設定檔**」按鈕會先跳出確認對話框，接著把四個維度重置回內建預設值，再重新執行一次上述自動載入流程，可用來捨棄當次手動調整、恢復成「開機當下」的狀態。
+
+「管理自訂防護規則」面板左下角的「**轉存為自動載入檔**」按鈕，會把目前記憶體中四個維度的最新狀態（含所有合併/覆蓋結果）打包成同樣格式的 JavaScript 檔案供下載，檔名固定為 `edushield.config.js`，使用者只需把它放到與 `EduShield.html` 相同的資料夾，下次開啟或點擊「重新載入設定檔」即可自動套用。
+
+> [!NOTE]
+> 此機制刻意只處理「規則與提示詞設定」，不涉及使用者實際輸入的文件內容——`sessionVault`、原始資料輸入框等仍完全遵循既有的零信任、零持久化原則，頁面關閉或重整後立即消失。
 
 ---
 
@@ -255,10 +307,10 @@ Token 格式規則：
 ## 四、進階開發者資訊
 
 ### 4.1 自訂硬阻斷詞彙
-使用文字編輯器開啟 `EduShield.html`，搜尋 `HARD_BLOCK_KEYWORDS`，在陣列中加入您的自訂詞彙。
+不需要手動編輯原始碼，透過工具列的「**管理自訂防護規則**」→「硬阻斷詞彙」分頁，下載 CSV 範本、填入詞彙後匯入即可（詳見 2.6 節）。若確實需要修改內建預設值本身，可搜尋 `HARD_BLOCK_KEYWORDS_DEFAULT`。
 
 ### 4.2 自訂偵測規則
-搜尋 `REGEX_RULES`，依照 `{ type: "標籤名", regex: /您的正規表示式/g, name: "中文名稱", example: "偵測範例" }` 格式新增規則。
+透過「**管理自訂防護規則**」→「正則規則」分頁匯入 4 欄 CSV（`替換標籤,規則名稱,正規表示式,說明範例`），詳見 2.6 節。若確實需要修改內建預設值本身，可搜尋 `REGEX_RULES_DEFAULT`，依照 `{ type: "標籤名", regex: /您的正規表示式/g, name: "中文名稱", example: "偵測範例" }` 格式新增規則。
 
 ### 4.3 自訂預設模型選項
 搜尋 `<select id="ollamaModelSelect">`，在 `<option>` 列表中直接加入您機構常用的模型名稱。

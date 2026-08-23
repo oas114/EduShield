@@ -48,9 +48,9 @@ Whenever `EduShield_README.md` is updated, this file MUST be updated to match.
 
 ## II. Core Modules & Technical Specifications
 
-### 2.1 Detection & Masking Rule Engine (`REGEX_RULES`)
+### 2.1 Detection & Masking Rule Engine (`REGEX_RULES_DEFAULT`)
 
-The system defines a constant array `REGEX_RULES`. Each entry follows the format `{ type, regex, name, example }`. Tokens follow the format `{{TYPE_N}}`, where `N` is a per-type sequential counter.
+The system defines a frozen constant array `REGEX_RULES_DEFAULT` (`Object.freeze`) as the built-in baseline that "Reload Config" restores to. Detection logic actually reads from the live working state `regexRules` (each entry additionally carries `pattern`/`flags`/`source`), which can be extended via the "Manage Custom Protection Rules" UI — see 2.6. Each entry follows the format `{ type, regex, name, example }`. Tokens follow the format `{{TYPE_N}}`, where `N` is a per-type sequential counter.
 
 **Priority Logic**: Inside `extractStaticEntities()`, entities are sorted before overlap removal (`occupied` array):
 1. `isCritical` entities take highest priority (Hard Block keywords first)
@@ -81,9 +81,9 @@ The system defines a constant array `REGEX_RULES`. Each entry follows the format
 | Vendor / Contractor Name | `VENDOR_N` | `...(?:股份有限公司|有限公司|企業社|...)` | 台灣資訊股份有限公司 |
 | Budget / Expense Amount | `AMOUNT_N` | `NT$...\|...\d+\s*(?:元|萬元)` | 1,250,000 元 |
 
-### 2.2 Hard Block Safety Interlock (`HARD_BLOCK_KEYWORDS`)
+### 2.2 Hard Block Safety Interlock (`HARD_BLOCK_KEYWORDS_DEFAULT`)
 
-The system defines a constant array `HARD_BLOCK_KEYWORDS` containing 36 extremely sensitive terms related to special education needs, child protection, gender-based violence, mental health records, and economic vulnerability. When any of these terms are detected, the system immediately locks down.
+The system defines a frozen constant array `HARD_BLOCK_KEYWORDS_DEFAULT` (`Object.freeze`) containing 36 extremely sensitive terms related to special education needs, child protection, gender-based violence, mental health records, and economic vulnerability, as the built-in baseline. Detection logic actually reads from the live working state `hardBlockKeywords` (each entry carries a `source` field), which can be extended via the "Manage Custom Protection Rules" UI — see 2.6. When any of these terms are detected, the system immediately locks down.
 
 **DOM Cascade on Trigger** (`triggerHardBlock()`):
 1. `#hardBlockBanner` becomes visible (red warning banner at the top)
@@ -96,16 +96,13 @@ AI Channel 2 (risk assessment) can also trigger this flow if it returns `critica
 
 ### 2.3 Custom Dictionary Module (`customDict`)
 
-- **Data Structure**: `customDict` (global array), each entry: `{ type: string, value: string, reason: string, isAi?: boolean }`
+- **Data Structure**: `customDict` (global array), each entry: `{ type: string, value: string, reason: string, isAi?: boolean, source: string }`
 - **Loading Methods**:
-  1. **CSV Upload** (`handleCsvUpload`): Uses `FileReader.readAsText()`, splits line-by-line by `,`. Automatically skips header rows (if the first column contains "關鍵字" / keyword). Automatically strips surrounding double quotes — fully compatible with CSVs exported by the system itself.
-  2. **Online Create / Edit** (`applyOnlineCsv`): Reads from each `.csv-kw-input` / `.csv-type-input` in `#csvEditTbody`. If `type` is left blank, defaults to `'CUSTOM'`.
+  1. **CSV Upload** (`handleCsvUpload`): Uses `FileReader.readAsText()`, parsed via `parseCsvLine()` (supports standard CSV double-quote escaping, so field values may contain commas). Automatically skips header rows (if the first column contains "關鍵字" / keyword). The parsed rows are then handed to the Merge/Replace/Cancel dialog rather than blindly overwriting the dictionary — see 2.6.
+  2. **Online Create / Edit** (`applyOnlineCsv`): Reads from each `.csv-kw-input` / `.csv-type-input` in `#csvEditTbody`. If `type` is left blank, defaults to `'CUSTOM'`. (This path keeps its original overwrite-everything behavior and does not go through the merge dialog.)
   3. **Manual Text Selection**: Select text in the editor, then click "設為機密" (Mark as Confidential) in the floating menu — adds entry with `type: 'CUSTOM'`.
-  4. **AI Return** (`processAnonymizePhase2`): Entities returned by Channel 1 are added with `isAi: true`.
-- **CSV Export**: `downloadOnlineCsv()` outputs UTF-8 with BOM (`\uFEFF`), with keyword fields wrapped in double quotes.
-
-> [!WARNING]
-> **CSV Format Limitation**: The system uses comma (`,`) as the field delimiter with a simple `split(',')` parser. **Keyword values must not contain commas.** If a term itself contains a comma, use the **"Online Dictionary Builder"** (詞庫: N button) to enter it directly.
+  4. **AI Return** (`processAnonymizePhase2`): Entities returned by Channel 1 are added with `isAi: true` and `source: 'ai-session'` — a per-document, session-only result excluded when exporting an auto-load config file.
+- **CSV Export**: `downloadOnlineCsv()` outputs UTF-8 with BOM, with keyword fields wrapped in double quotes; the blank template is served separately by `downloadCsvTemplate()` (filename `EduShield_詞庫範本.csv`, deliberately different from the export filename to avoid one overwriting the other).
 
 ### 2.4 Local AI Module (Ollama)
 
@@ -176,6 +173,61 @@ Each restored token is a clickable `<span>` supporting three-state cycling:
 - **State 0 (Show)**: Displays the original text
 - **State 1 (Full Mask)**: Fills with repeated `#customMaskSymbol` characters (default `■`)
 - **State 2 (Partial Mask)**: Keeps the first and last character; fills the middle with full-width `Ｏ`
+
+### 2.6 Custom Protection Manager (Four Dimensions)
+
+Click "**Manage Custom Protection Rules**" in the toolbar to customize, import, and export across four dimensions, with no need to hand-edit the HTML source:
+
+1. **Roster / Dictionary** (`customDict`, see 2.3)
+2. **Hard Block Keywords**: its own tab; CSV format is a single column (`關鍵字`)
+3. **Regex Rules**: its own tab; CSV format is 4 columns (`替換標籤,規則名稱,正規表示式,說明範例`) — the pattern column accepts either a bare pattern (defaults to flag `g`) or a full `/pattern/flags` literal-style string
+4. **Local AI Prompts**: the "地端 AI 提示詞" tab exposes editable textareas for both channels, showing the currently effective prompt text with a one-click "Reset to Default"; the `{{TEXT}}` placeholder is substituted with the actual text to scan at call time
+
+#### Data Model
+
+Built-in defaults are frozen as `HARD_BLOCK_KEYWORDS_DEFAULT` / `REGEX_RULES_DEFAULT` / `AI_PROMPTS_DEFAULT`. Three live working-state variables are what detection logic actually reads:
+```javascript
+let hardBlockKeywords = []; // [{ value, source }]
+let regexRules = [];        // [{ type, pattern, flags, name, example, source }]
+let aiPrompts = { channel1: '', channel2: '' };
+```
+The `source` field marks each rule's origin and is shown as a badge in both the management UI and the PII Rule Guide: `Built-in` / `Auto-loaded` / `Manually imported` / `Overridden` (`customDict` also has an internal-only `ai-session` tag for the current document's transient AI-extracted results, excluded when exporting a config file).
+
+Regex rules no longer hold a real `RegExp` object directly — they're split into `pattern` (`regex.source`) and `flags` (`regex.flags`) strings, since a CSV/JSON config file can only carry strings. Every reconstruction of a `RegExp` goes through the `tryCompileRegexRow()` try/catch guard; a malformed rule is skipped and reported individually without aborting the rest of the scan.
+
+#### Merge / Replace / Cancel (Pattern as the Unique Key)
+
+Importing a CSV via "Manage Custom Protection Rules" (applies to Hard Block Keywords and Regex Rules; the roster's existing "Import Custom Dictionary" button has been upgraded to the same flow, while "Online Dictionary Builder" keeps its original overwrite behavior) pops up a choice dialog whenever that dimension already has data:
+- **Merge**: keep existing entries and append the new ones; if a regex's **pattern string** (flags excluded) or a roster/hard-block **value** matches an existing entry, the existing entry is fully overwritten (tagged `Overridden`) — name, tag, example, etc. are all replaced too.
+- **Replace All**: wipe every existing entry in that dimension (including built-ins) and use only the imported file's content.
+- **Cancel**: no changes.
+
+Any row that fails `new RegExp()` validation during a regex import is listed separately and skipped, without blocking the rest of the batch from importing.
+
+#### Same-Folder Auto-load Config File
+
+On startup, the system attempts to dynamically load `edushield.config.js` from the same folder as `EduShield.html` via `<script src="edushield.config.js">` (modeled on the existing Tailwind CDN / local `style.css` degradation IIFE):
+- **File absent**: silently skipped, with only a console message — no impact on regular users
+- **File present but has a syntax error**: does not crash the app; a console warning is logged and built-in defaults are kept
+- **File loads correctly**: its content is merged in (tagged `Auto-loaded`)
+
+Config file format:
+```javascript
+window.EDUSHIELD_AUTO_CONFIG = {
+  version: 1,
+  roster: [ { type: "VENDOR", value: "...", reason: "..." } ],
+  hardBlock: [ "Custom hard-block term A" ],
+  regexRules: [ { type: "CUSTOM_CODE", pattern: "CODE-\\d{4}", flags: "g", name: "Custom code", example: "CODE-1234" } ],
+  aiPrompts: { channel1: "...{{TEXT}}", channel2: "...{{TEXT}}" }
+};
+```
+
+The toolbar's "**Reload Config**" button prompts for confirmation, then resets all four dimensions to their built-in defaults and re-runs the auto-load step above — useful for discarding this session's manual edits and returning to the "as-launched" state.
+
+The "**Export as Auto-load File**" button at the bottom of the "Manage Custom Protection Rules" panel packages the current in-memory state of all four dimensions (including every merge/override result) into the same config format for download, with the fixed filename `edushield.config.js` — drop it next to `EduShield.html` and it will be picked up automatically on the next launch, or via "Reload Config".
+
+> [!NOTE]
+> This mechanism deliberately only handles rule/prompt configuration — it never touches the actual document content the user types in. `sessionVault`, the raw input textarea, etc. still fully honor the existing zero-trust, zero-persistence promise and vanish on page close or refresh.
 
 ---
 
@@ -271,11 +323,11 @@ If Ollama is configured, the **"透過地端 AI 深度掃描"** (Local AI Deep S
 
 ### 4.1 Adding Custom Hard Block Keywords
 
-Open `EduShield.html` in a text editor, search for `HARD_BLOCK_KEYWORDS`, and add your custom terms to the array.
+No source editing needed — use the toolbar's "Manage Custom Protection Rules" → "Hard Block Keywords" tab: download the CSV template, fill in your terms, and import (see 2.6). To change the built-in defaults themselves, search for `HARD_BLOCK_KEYWORDS_DEFAULT`.
 
 ### 4.2 Adding Custom Detection Rules
 
-Search for `REGEX_RULES` and add a new rule object in the format:
+Use "Manage Custom Protection Rules" → "Regex Rules" tab to import a 4-column CSV (`TypeTag,RuleName,Pattern,ExampleText`) — see 2.6. To change the built-in defaults themselves, search for `REGEX_RULES_DEFAULT` and add a new rule object in the format:
 ```javascript
 { type: "TAG_NAME", regex: /your-regex-here/g, name: "Display Name", example: "Example Match" }
 ```

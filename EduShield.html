@@ -222,8 +222,11 @@
         <button onclick="openSettings()" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors">
           系統設定
         </button>
+        <button id="manageProtectionBtn" onclick="openProtectionManagerModal()" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors">
+          管理自訂防護規則
+        </button>
         <button id="reloadConfigBtn" onclick="reloadConfig()" title="清除手動編輯，重新套用內建預設值與同資料夾的自動載入設定檔" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors">
-          🔄 重新載入設定檔
+          重新載入設定檔
         </button>
       </div>
     </div>
@@ -581,14 +584,14 @@
         </div>
 
         <div id="guideInstructions" class="hidden bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4 text-xs text-stone-700 leading-relaxed space-y-2">
-          <p class="font-bold text-stone-800 text-sm">如何自行修改個資規則與硬阻斷詞彙？</p>
-          <p>由於瀏覽器的安全限制，您無法直接在網頁上點擊儲存來修改這個 HTML 檔案。但是，您可以非常輕易地手動修改它：</p>
+          <p class="font-bold text-stone-800 text-sm">如何自行新增個資規則與硬阻斷詞彙？</p>
+          <p>不需要手動修改 HTML 原始碼，請透過工具列的「管理自訂防護規則」介面操作：</p>
           <ol class="list-decimal list-inside space-y-1 ml-1 text-stone-600">
-            <li>對著這個 <code class="bg-white border border-stone-200 px-1 rounded">本系統的 HTML</code> 檔案按右鍵。</li>
-            <li>選擇「開啟檔案」 -> 選擇「記事本 (Notepad)」或是「VS Code」。</li>
-            <li>使用搜尋功能 (Ctrl+F) 尋找 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">HARD_BLOCK_KEYWORDS_DEFAULT</code> 或 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">REGEX_RULES_DEFAULT</code>。</li>
-            <li>直接在括號中照著格式新增您的詞彙、範例或正規表示式。</li>
-            <li>存檔 (Ctrl+S) 後，重新整理這個網頁 (F5) 即可立刻看到您修改的成果！</li>
+            <li>點擊工具列的<strong>「管理自訂防護規則」</strong>，切換到「硬阻斷詞彙」或「正則規則」分頁。</li>
+            <li>下載該分頁的 CSV 範本，依格式填入您的詞彙或正規表示式後存檔。</li>
+            <li>點「匯入 CSV」選擇該檔案，依需求選擇「新增並合併」或「完全取代」。</li>
+            <li>若希望往後每次開啟都自動套用，可在同一個管理介面點「轉存為自動載入檔」，並將下載的 <code class="bg-white border border-stone-200 px-1 rounded">edushield.config.js</code> 放到與 <code class="bg-white border border-stone-200 px-1 rounded">EduShield.html</code> 相同的資料夾。</li>
+            <li>若手動修改後想恢復成內建預設值，點工具列的「重新載入設定檔」即可。</li>
           </ol>
         </div>
         
@@ -709,6 +712,102 @@
     </div>
   </div>
 
+  <!-- ==================== 管理自訂防護規則 Modal ==================== -->
+  <div id="protectionManagerModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-stone-200">
+      <div class="px-6 py-4 border-b border-stone-100 flex justify-between items-center bg-blue-50/50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-blue-900">管理自訂防護規則</h2>
+        <button onclick="closeModal('protectionManagerModal')" class="text-stone-400 hover:text-stone-600 font-medium text-lg">&times;</button>
+      </div>
+      <div class="px-6 pt-3 flex gap-2 border-b border-stone-100 flex-shrink-0">
+        <button id="pmTabBtnHardBlock" onclick="switchPmTab('hardBlock')" class="pm-tab-btn px-3 py-2 text-xs font-medium border-b-2 border-blue-600 text-blue-700">硬阻斷詞彙</button>
+        <button id="pmTabBtnRegex" onclick="switchPmTab('regex')" class="pm-tab-btn px-3 py-2 text-xs font-medium border-b-2 border-transparent text-stone-500 hover:text-stone-700">正則規則</button>
+        <button id="pmTabBtnPrompts" onclick="switchPmTab('prompts')" class="pm-tab-btn px-3 py-2 text-xs font-medium border-b-2 border-transparent text-stone-500 hover:text-stone-700">地端 AI 提示詞</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 bg-white">
+        <div id="pmPanelHardBlock" class="pm-panel space-y-3">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <p class="text-xs text-stone-500">單欄純文字 CSV，每列一個關鍵字。</p>
+            <div class="flex gap-2">
+              <input type="file" id="hardBlockCsvFileInput" accept=".csv" class="hidden" onchange="handleHardBlockCsvUpload(event)" />
+              <button onclick="downloadHardBlockCsvTemplate()" class="text-xs bg-white border border-stone-300 px-3 py-1.5 rounded hover:bg-stone-50">下載範本</button>
+              <button onclick="document.getElementById('hardBlockCsvFileInput').click()" class="text-xs bg-white border border-stone-300 px-3 py-1.5 rounded hover:bg-stone-50">匯入 CSV</button>
+            </div>
+          </div>
+          <div class="border border-stone-200 rounded-lg overflow-x-auto max-h-64 overflow-y-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-stone-50 sticky top-0"><tr>
+                <th class="px-3 py-2 font-medium text-stone-600 border-b border-stone-200">關鍵字</th>
+                <th class="px-3 py-2 font-medium text-stone-600 border-b border-stone-200 w-16 text-center">刪除</th>
+              </tr></thead>
+              <tbody id="hardBlockMgmtTbody" class="divide-y divide-stone-200 bg-white"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="pmPanelRegex" class="pm-panel space-y-3 hidden">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <p class="text-xs text-stone-500">4 欄 CSV：替換標籤,規則名稱,正規表示式,說明範例。正規表示式欄可用純 pattern 或 /pattern/flags 格式。</p>
+            <div class="flex gap-2">
+              <input type="file" id="regexCsvFileInput" accept=".csv" class="hidden" onchange="handleRegexCsvUpload(event)" />
+              <button onclick="downloadRegexCsvTemplate()" class="text-xs bg-white border border-stone-300 px-3 py-1.5 rounded hover:bg-stone-50">下載範本</button>
+              <button onclick="document.getElementById('regexCsvFileInput').click()" class="text-xs bg-white border border-stone-300 px-3 py-1.5 rounded hover:bg-stone-50">匯入 CSV</button>
+            </div>
+          </div>
+          <div class="border border-stone-200 rounded-lg overflow-x-auto max-h-64 overflow-y-auto">
+            <table class="w-full text-left text-sm min-w-[600px]">
+              <thead class="bg-stone-50 sticky top-0"><tr>
+                <th class="px-3 py-2 font-medium text-stone-600 border-b border-stone-200">標籤</th>
+                <th class="px-3 py-2 font-medium text-stone-600 border-b border-stone-200">名稱</th>
+                <th class="px-3 py-2 font-medium text-stone-600 border-b border-stone-200">正規表示式</th>
+                <th class="px-3 py-2 font-medium text-stone-600 border-b border-stone-200 w-16 text-center">刪除</th>
+              </tr></thead>
+              <tbody id="regexMgmtTbody" class="divide-y divide-stone-200 bg-white"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="pmPanelPrompts" class="pm-panel space-y-4 hidden">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-medium text-stone-600">通道一：實體擷取提示詞（{{TEXT}} 會被替換成實際待掃描文字）</label>
+              <button onclick="resetAiPrompt('channel1')" class="text-xs bg-white border border-stone-300 px-3 py-1 rounded hover:bg-stone-50">重設為預設值</button>
+            </div>
+            <textarea id="aiPromptChannel1Textarea" oninput="saveAiPromptFromTextarea('channel1')" rows="6" class="w-full text-xs font-mono p-2 border border-stone-300 rounded focus:outline-none focus:border-blue-500"></textarea>
+            <p id="aiPromptChannel1Warning" class="hidden text-xs text-amber-600">提示詞裡沒有找到 {{TEXT}}，AI 將收不到實際待掃描的文字內容。</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-medium text-stone-600">通道二：風險判定提示詞（{{TEXT}} 會被替換成實際待掃描文字）</label>
+              <button onclick="resetAiPrompt('channel2')" class="text-xs bg-white border border-stone-300 px-3 py-1 rounded hover:bg-stone-50">重設為預設值</button>
+            </div>
+            <textarea id="aiPromptChannel2Textarea" oninput="saveAiPromptFromTextarea('channel2')" rows="6" class="w-full text-xs font-mono p-2 border border-stone-300 rounded focus:outline-none focus:border-blue-500"></textarea>
+            <p id="aiPromptChannel2Warning" class="hidden text-xs text-amber-600">提示詞裡沒有找到 {{TEXT}}，AI 將收不到實際待掃描的文字內容。</p>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-stone-100 bg-stone-50 flex justify-between items-center gap-3 flex-shrink-0">
+        <button id="exportAutoConfigBtn" onclick="exportAutoConfig()" title="把目前記憶體中的自訂規則與提示詞打包成可自動載入的設定檔" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">轉存為自動載入檔</button>
+        <button onclick="closeModal('protectionManagerModal')" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 匯入合併/取代 Modal ==================== -->
+  <div id="importModeModal" class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 border border-stone-200">
+      <div class="px-6 py-4 border-b border-stone-100 bg-blue-50/50">
+        <h2 class="text-sm font-bold text-blue-900">匯入方式</h2>
+      </div>
+      <div class="p-6 space-y-3">
+        <p id="importModeMessage" class="text-sm text-stone-700"></p>
+        <div id="importModeErrorList" class="hidden text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2 max-h-32 overflow-y-auto"></div>
+      </div>
+      <div class="px-6 py-4 border-t border-stone-100 bg-stone-50 flex flex-col gap-2">
+        <button onclick="confirmImportMode('merge')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">新增並合併</button>
+        <button onclick="confirmImportMode('replace')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors">完全取代</button>
+        <button onclick="closeModal('importModeModal')" class="px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors">取消</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== 全域提示框 ==================== -->
   <div id="globalTooltip" class="fixed z-[100] px-2 py-1 bg-stone-800 text-white text-[10px] rounded whitespace-nowrap shadow-lg pointer-events-none transition-opacity duration-150 opacity-0 hidden"></div>
@@ -839,7 +938,15 @@
 
     function tryCompileRegexRow(row, idx) {
       try {
-        const { pattern, flags } = parsePatternColumn(row.pattern);
+        // 若呼叫端已經分開提供 pattern/flags（例如自動載入設定檔的 JSON 格式），優先採用；
+        // 否則視為 CSV 匯入的單一欄位，可能是純 pattern 或 /pattern/flags 字面量字串。
+        let pattern, flags;
+        if (typeof row.flags === 'string' && row.flags) {
+          pattern = (row.pattern || '').trim();
+          flags = row.flags;
+        } else {
+          ({ pattern, flags } = parsePatternColumn(row.pattern));
+        }
         const finalFlags = flags.includes('g') ? flags : flags + 'g';
         new RegExp(pattern, finalFlags); // 僅用於驗證，丟例外代表 pattern 不合法
         return {
@@ -873,6 +980,7 @@
       hardBlockKeywords = buildDefaultHardBlockState();
       regexRules = buildDefaultRegexState();
       aiPrompts = buildDefaultAiPromptsState();
+      customDict = []; // 名冊沒有內建預設值，重置就是清空
     }
 
     function getHardBlockKeywordValues() {
@@ -892,7 +1000,352 @@
       return ` <span class="badge-source badge-${source}" style="font-size:10px;padding:1px 6px;border-radius:9999px;background:#e7e5e4;color:#57534e;margin-left:4px;white-space:nowrap;">${label}</span>`;
     }
 
-    initCustomProtectionState(); // 開機先套用內建預設值，稍後再嘗試自動載入設定檔（見檔案結尾）
+    // ==========================================
+    // 合併/取代引擎、同資料夾自動載入設定檔
+    // ==========================================
+    function mergeByKey(existingArr, incomingArr, keyFn, sourceForNew, sourceForOverwrite) {
+      const byKey = new Map(existingArr.map(e => [keyFn(e), e]));
+      incomingArr.forEach(incoming => {
+        const key = keyFn(incoming);
+        byKey.set(key, { ...incoming, source: byKey.has(key) ? sourceForOverwrite : sourceForNew });
+      });
+      return Array.from(byKey.values());
+    }
+
+    function mergeRegexRules(existingArr, incomingRows, sourceForNew, sourceForOverwrite) {
+      const errors = [];
+      const compiled = [];
+      incomingRows.forEach((row, idx) => {
+        const r = tryCompileRegexRow(row, idx);
+        if (r.ok) compiled.push(r.entry); else errors.push(r);
+      });
+      const result = mergeByKey(existingArr, compiled, e => e.pattern, sourceForNew, sourceForOverwrite);
+      return { result, errors };
+    }
+
+    function applyAutoConfig(cfg) {
+      let errors = [];
+      if (Array.isArray(cfg.hardBlock)) {
+        const incoming = cfg.hardBlock.filter(v => typeof v === 'string' && v.trim()).map(v => ({ value: v.trim() }));
+        hardBlockKeywords = mergeByKey(hardBlockKeywords, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
+      }
+      if (Array.isArray(cfg.roster)) {
+        const incoming = cfg.roster.filter(r => r && r.value).map(r => ({ type: r.type || 'CUSTOM', value: r.value, reason: r.reason || '自動載入設定檔' }));
+        customDict = mergeByKey(customDict, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
+      }
+      if (Array.isArray(cfg.regexRules)) {
+        const { result, errors: regexErrors } = mergeRegexRules(regexRules, cfg.regexRules, 'auto-loaded', 'auto-loaded');
+        regexRules = result;
+        errors = errors.concat(regexErrors);
+      }
+      if (cfg.aiPrompts && typeof cfg.aiPrompts === 'object') {
+        if (typeof cfg.aiPrompts.channel1 === 'string' && cfg.aiPrompts.channel1.trim()) aiPrompts.channel1 = cfg.aiPrompts.channel1;
+        if (typeof cfg.aiPrompts.channel2 === 'string' && cfg.aiPrompts.channel2.trim()) aiPrompts.channel2 = cfg.aiPrompts.channel2;
+      }
+      return errors;
+    }
+
+    function showAutoConfigErrorBanner(errors) {
+      console.warn(`[EduShield] 自動載入設定檔中有 ${errors.length} 筆正則規則格式錯誤，已略過該幾筆：`, errors);
+    }
+
+    function loadAutoConfig(onDone) {
+      const s = document.createElement('script');
+      s.src = 'edushield.config.js';
+      s.onload = function () {
+        const cfg = window.EDUSHIELD_AUTO_CONFIG;
+        if (cfg && typeof cfg === 'object') {
+          const errors = applyAutoConfig(cfg);
+          if (errors.length) showAutoConfigErrorBanner(errors);
+        } else {
+          console.warn('[EduShield] edushield.config.js 已載入但未設定 window.EDUSHIELD_AUTO_CONFIG，可能內容有誤，僅套用內建預設值。');
+        }
+        if (onDone) onDone();
+      };
+      s.onerror = function () {
+        console.info('[EduShield] 同資料夾未找到 edushield.config.js，僅使用內建預設值。');
+        if (onDone) onDone();
+      };
+      document.head.appendChild(s);
+    }
+
+    function reloadConfig() {
+      if (!confirm('重新載入將清除您目前手動編輯過的自訂規則與詞庫，並重新套用內建預設值與自動載入檔（如果存在）。確定要繼續嗎？')) return;
+      initCustomProtectionState();
+      loadAutoConfig(() => {
+        document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
+        renderHardBlockMgmtTable();
+        renderRegexMgmtTable();
+        renderAiPromptTextareas();
+        triggerPreview();
+        alert('已重新載入設定檔。');
+      });
+    }
+
+    // ==========================================
+    // CSV 解析與下載共用小工具
+    // ==========================================
+    function parseCsvLine(line) {
+      // 正則規則的 pattern 欄常含逗號（例如 \d{7,8}），不能用單純 split(',')，需支援標準 CSV 雙引號跳脫。
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+          if (ch === '"') {
+            if (line[i + 1] === '"') { cur += '"'; i++; }
+            else { inQuotes = false; }
+          } else {
+            cur += ch;
+          }
+        } else {
+          if (ch === '"') inQuotes = true;
+          else if (ch === ',') { result.push(cur); cur = ''; }
+          else cur += ch;
+        }
+      }
+      result.push(cur);
+      return result.map(s => s.trim());
+    }
+
+    function escapeForInlineJs(str) {
+      // 用於嵌入 onclick="...('...')" 這種單引號 JS 字串字面量前——正則 pattern 幾乎必定含反斜線（\d、\b 等），
+      // 若不先跳脫反斜線，瀏覽器解析 JS 字串時會把 \d 這種未知跳脫序列吃掉反斜線，導致傳入的字串跟陣列裡實際的 pattern 對不上。
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function downloadTextAsFile(content, filename, mime) {
+      const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // 管理自訂防護規則：面板渲染
+    // ==========================================
+    function openProtectionManagerModal() {
+      renderHardBlockMgmtTable();
+      renderRegexMgmtTable();
+      renderAiPromptTextareas();
+      openModal('protectionManagerModal');
+    }
+
+    function switchPmTab(tab) {
+      const panels = { hardBlock: 'pmPanelHardBlock', regex: 'pmPanelRegex', prompts: 'pmPanelPrompts' };
+      const buttons = { hardBlock: 'pmTabBtnHardBlock', regex: 'pmTabBtnRegex', prompts: 'pmTabBtnPrompts' };
+      const activeCls = ['border-blue-600', 'text-blue-700'];
+      const inactiveCls = ['border-transparent', 'text-stone-500'];
+      Object.keys(panels).forEach(key => {
+        document.getElementById(panels[key]).classList.toggle('hidden', key !== tab);
+        const btn = document.getElementById(buttons[key]);
+        btn.classList.remove(...activeCls, ...inactiveCls);
+        btn.classList.add(...(key === tab ? activeCls : inactiveCls));
+      });
+    }
+
+    function renderAiPromptTextareas() {
+      document.getElementById('aiPromptChannel1Textarea').value = aiPrompts.channel1;
+      document.getElementById('aiPromptChannel2Textarea').value = aiPrompts.channel2;
+      document.getElementById('aiPromptChannel1Warning').classList.toggle('hidden', aiPrompts.channel1.includes('{{TEXT}}'));
+      document.getElementById('aiPromptChannel2Warning').classList.toggle('hidden', aiPrompts.channel2.includes('{{TEXT}}'));
+    }
+
+    function saveAiPromptFromTextarea(channel) {
+      const textarea = document.getElementById(channel === 'channel1' ? 'aiPromptChannel1Textarea' : 'aiPromptChannel2Textarea');
+      aiPrompts[channel] = textarea.value;
+      document.getElementById(channel === 'channel1' ? 'aiPromptChannel1Warning' : 'aiPromptChannel2Warning')
+        .classList.toggle('hidden', textarea.value.includes('{{TEXT}}'));
+    }
+
+    function resetAiPrompt(channel) {
+      aiPrompts[channel] = AI_PROMPTS_DEFAULT[channel];
+      renderAiPromptTextareas();
+    }
+
+    function exportAutoConfig() {
+      const cfg = {
+        version: 1,
+        // AI 擷取出來的暫存名冊項目（source: 'ai-session'）屬於當次文件的內容，不適合打包進「每次開機都套用」的通用設定檔。
+        roster: customDict.filter(e => e.source !== 'ai-session').map(e => ({ type: e.type, value: e.value, reason: e.reason })),
+        hardBlock: hardBlockKeywords.map(e => e.value),
+        regexRules: regexRules.map(r => ({ type: r.type, pattern: r.pattern, flags: r.flags, name: r.name, example: r.example })),
+        aiPrompts: { channel1: aiPrompts.channel1, channel2: aiPrompts.channel2 }
+      };
+      const content = `// EduShield 自動載入設定檔——請將此檔案與 EduShield.html 放在同一個資料夾，並保持檔名為 edushield.config.js\n` +
+        `window.EDUSHIELD_AUTO_CONFIG = ${JSON.stringify(cfg, null, 2)};\n`;
+      downloadTextAsFile(content, 'edushield.config.js', 'text/javascript;charset=utf-8;');
+    }
+
+    function renderHardBlockMgmtTable() {
+      const tbody = document.getElementById('hardBlockMgmtTbody');
+      if (!tbody) return;
+      tbody.innerHTML = hardBlockKeywords.map(entry => `
+        <tr>
+          <td class="px-3 py-2">${escapeHtml(entry.value)}${sourceBadgeHtml(entry.source)}</td>
+          <td class="px-3 py-2 text-center">
+            <button onclick="deleteHardBlockEntry('${escapeHtml(escapeForInlineJs(entry.value))}')" class="text-red-500 hover:text-red-700 text-xs">刪除</button>
+          </td>
+        </tr>
+      `).join('') || `<tr><td colspan="2" class="px-3 py-4 text-center text-stone-400 text-xs">目前沒有硬阻斷關鍵字</td></tr>`;
+    }
+
+    function renderRegexMgmtTable() {
+      const tbody = document.getElementById('regexMgmtTbody');
+      if (!tbody) return;
+      tbody.innerHTML = regexRules.map(rule => `
+        <tr>
+          <td class="px-3 py-2 font-mono text-xs">${escapeHtml(rule.type)}</td>
+          <td class="px-3 py-2">${escapeHtml(rule.name)}${sourceBadgeHtml(rule.source)}</td>
+          <td class="px-3 py-2 font-mono text-[10px] break-all">${escapeHtml(`/${rule.pattern}/${rule.flags}`)}</td>
+          <td class="px-3 py-2 text-center">
+            <button onclick="deleteRegexEntry('${escapeHtml(escapeForInlineJs(rule.pattern))}')" class="text-red-500 hover:text-red-700 text-xs">刪除</button>
+          </td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" class="px-3 py-4 text-center text-stone-400 text-xs">目前沒有正則規則</td></tr>`;
+    }
+
+    function deleteHardBlockEntry(value) {
+      hardBlockKeywords = hardBlockKeywords.filter(e => e.value !== value);
+      renderHardBlockMgmtTable();
+      triggerPreview();
+    }
+    function deleteRegexEntry(pattern) {
+      regexRules = regexRules.filter(r => r.pattern !== pattern);
+      renderRegexMgmtTable();
+      triggerPreview();
+    }
+
+    // ==========================================
+    // CSV 範本下載（硬阻斷、正則）
+    // ==========================================
+    function downloadHardBlockCsvTemplate() {
+      const csvContent = "﻿關鍵字\n自訂硬阻斷詞彙A\n自訂硬阻斷詞彙B\n";
+      downloadTextAsFile(csvContent, 'EduShield_硬阻斷詞彙範本.csv', 'text/csv;charset=utf-8;');
+    }
+    function downloadRegexCsvTemplate() {
+      const csvContent = "﻿替換標籤,規則名稱,正規表示式,說明範例\n" +
+        'CUSTOM_CODE,自訂代碼,"CODE-\\d{4}",CODE-1234\n' +
+        'CUSTOM_TEL2,市話(範例),"/0\\d{1,2}-?\\d{7,8}/gi",02-23456789\n';
+      downloadTextAsFile(csvContent, 'EduShield_正則規則範本.csv', 'text/csv;charset=utf-8;');
+    }
+
+    // ==========================================
+    // CSV 匯入 → 合併/取代/取消 對話框
+    // ==========================================
+    let pendingImport = null; // { dimension: 'roster'|'hardBlock'|'regex', rows: [...] }
+
+    function openImportDialog(dimension, rows) {
+      if (!rows.length) { alert('檔案中沒有可用的資料列。'); return; }
+      pendingImport = { dimension, rows };
+
+      const dimensionLabel = { roster: '名冊/詞庫', hardBlock: '硬阻斷關鍵字', regex: '正則規則' }[dimension];
+      const existingCount = { roster: customDict.length, hardBlock: hardBlockKeywords.length, regex: regexRules.length }[dimension];
+
+      const errorList = document.getElementById('importModeErrorList');
+      if (dimension === 'regex') {
+        const errors = rows.map((row, idx) => tryCompileRegexRow(row, idx)).filter(r => !r.ok);
+        if (errors.length) {
+          errorList.classList.remove('hidden');
+          errorList.innerHTML = `以下 ${errors.length} 列格式錯誤，將被略過：<br>` +
+            errors.map(e => `第 ${e.idx + 1} 列（${escapeHtml(e.raw.pattern || '')}）：${escapeHtml(e.error)}`).join('<br>');
+        } else {
+          errorList.classList.add('hidden');
+          errorList.innerHTML = '';
+        }
+      } else {
+        errorList.classList.add('hidden');
+        errorList.innerHTML = '';
+      }
+
+      document.getElementById('importModeMessage').innerText =
+        `偵測到目前已有 ${existingCount} 筆${dimensionLabel}，本次匯入 ${rows.length} 筆。請選擇如何處理：`;
+      openModal('importModeModal');
+    }
+
+    function confirmImportMode(mode) {
+      if (!pendingImport) { closeModal('importModeModal'); return; }
+      const { dimension, rows } = pendingImport;
+
+      if (dimension === 'hardBlock') {
+        const base = mode === 'replace' ? [] : hardBlockKeywords;
+        hardBlockKeywords = mergeByKey(base, rows.map(v => ({ value: v })), e => e.value, 'manual', 'overridden');
+        renderHardBlockMgmtTable();
+        document.getElementById('guideHardBlockList') && (document.getElementById('guideHardBlockList').innerText = getHardBlockKeywordValues().join('、'));
+      } else if (dimension === 'regex') {
+        const base = mode === 'replace' ? [] : regexRules;
+        const { result, errors } = mergeRegexRules(base, rows, 'manual', 'overridden');
+        regexRules = result;
+        if (errors.length) showAutoConfigErrorBanner(errors);
+        renderRegexMgmtTable();
+      } else if (dimension === 'roster') {
+        const base = mode === 'replace' ? [] : customDict;
+        customDict = mergeByKey(base, rows, e => e.value, 'manual', 'overridden');
+        document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
+      }
+
+      pendingImport = null;
+      closeModal('importModeModal');
+      triggerPreview();
+      alert('匯入完成。');
+    }
+
+    // ==========================================
+    // 硬阻斷／正則的 CSV 匯入
+    // ==========================================
+    function handleHardBlockCsvUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const lines = e.target.result.split(/\r\n|\n/).filter(l => l.trim() !== '');
+        let startIdx = 0;
+        if (lines[0] && /關鍵字|keyword/i.test(lines[0])) startIdx = 1;
+        const values = [];
+        for (let i = startIdx; i < lines.length; i++) {
+          const v = parseCsvLine(lines[i])[0];
+          if (v) values.push(v);
+        }
+        event.target.value = '';
+        openImportDialog('hardBlock', values);
+      };
+      reader.readAsText(file);
+    }
+
+    function handleRegexCsvUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const lines = e.target.result.split(/\r\n|\n/).filter(l => l.trim() !== '');
+        let startIdx = 0;
+        if (lines[0] && /替換標籤|typetag/i.test(lines[0])) startIdx = 1;
+        const rows = [];
+        for (let i = startIdx; i < lines.length; i++) {
+          const cols = parseCsvLine(lines[i]);
+          if (cols[0] || cols[2]) {
+            rows.push({ type: cols[0] || 'CUSTOM', name: cols[1] || '', pattern: cols[2] || '', example: cols[3] || '' });
+          }
+        }
+        event.target.value = '';
+        openImportDialog('regex', rows);
+      };
+      reader.readAsText(file);
+    }
+
+    initCustomProtectionState(); // 開機先套用內建預設值
+    // 再嘗試從同資料夾的 edushield.config.js 合併自訂設定（不存在則靜默略過）；
+    // 合併完務必刷新「詞庫: N」計數器，否則畫面會停留在 HTML 寫死的初始值 0，
+    // 之後點「重新載入設定檔」時看起來就像多跑出一筆一樣，其實是同一筆遲遲沒反映到畫面上。
+    loadAutoConfig(() => {
+      document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
+    });
 
     // ==========================================
     // UI 控制與頁籤切換
@@ -1281,29 +1734,24 @@
       reader.onload = function(e) {
         const text = e.target.result;
         const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
-        customDict = [];
-        
-        const firstLine = lines[0].split(',');
+
         let startIdx = 0;
-        if (firstLine[0] && firstLine[0].trim().includes('關鍵字')) {
+        if (lines[0] && lines[0].includes('關鍵字')) {
             startIdx = 1;
         }
 
+        const rows = [];
         for (let i = startIdx; i < lines.length; i++) {
-            const parts = lines[i].split(',');
-            let val = parts[0] ? parts[0].trim() : '';
-            if (val.startsWith('"') && val.endsWith('"') && val.length >= 2) {
-                val = val.substring(1, val.length - 1).replace(/""/g, '"');
-            }
+            const parts = parseCsvLine(lines[i]);
+            const val = parts[0] || '';
             if (val) {
-                const type = (parts[1] && parts[1].trim()) ? parts[1].trim().toUpperCase() : 'CUSTOM';
-                customDict.push({ type, value: val, reason: "自訂詞庫", source: 'manual' });
+                const type = parts[1] ? parts[1].toUpperCase() : 'CUSTOM';
+                rows.push({ type, value: val, reason: "自訂詞庫" });
             }
         }
-        
-        document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
-        alert(`成功載入 ${customDict.length} 筆自訂詞庫！`);
-        triggerPreview();
+
+        event.target.value = '';
+        openImportDialog('roster', rows);
       };
       reader.readAsText(file);
     }
@@ -1314,7 +1762,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", "EduShield_自訂詞庫.csv");
+      link.setAttribute("download", "EduShield_詞庫範本.csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
