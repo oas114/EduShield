@@ -583,7 +583,7 @@
           <ol class="list-decimal list-inside space-y-1 ml-1 text-stone-600">
             <li>對著這個 <code class="bg-white border border-stone-200 px-1 rounded">本系統的 HTML</code> 檔案按右鍵。</li>
             <li>選擇「開啟檔案」 -> 選擇「記事本 (Notepad)」或是「VS Code」。</li>
-            <li>使用搜尋功能 (Ctrl+F) 尋找 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">HARD_BLOCK_KEYWORDS</code> 或 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">REGEX_RULES</code>。</li>
+            <li>使用搜尋功能 (Ctrl+F) 尋找 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">HARD_BLOCK_KEYWORDS_DEFAULT</code> 或 <code class="bg-white border border-stone-200 px-1 rounded text-blue-600">REGEX_RULES_DEFAULT</code>。</li>
             <li>直接在括號中照著格式新增您的詞彙、範例或正規表示式。</li>
             <li>存檔 (Ctrl+S) 後，重新整理這個網頁 (F5) 即可立刻看到您修改的成果！</li>
           </ol>
@@ -723,7 +723,10 @@
         .replace(/'/g, "&#039;");
     }
 
-    let customDict = []; // Array of { type, value }
+    let customDict = []; // Array of { type, value, reason, isAi?, source }
+    let hardBlockKeywords = []; // [{ value, source }] — live working copy, see initCustomProtectionState()
+    let regexRules = []; // [{ type, pattern, flags, name, example, source }] — live working copy
+    let aiPrompts = { channel1: '', channel2: '' }; // live working copy of AI_PROMPTS_DEFAULT
     let whitelist = new Set();
     let sessionVault = {}; 
     let reportData = [];
@@ -779,15 +782,16 @@
       });
     }
 
-    // 在此陣列中加入您的自訂硬阻斷關鍵字，例如: "特定詞彙", "另一個詞彙"
-    const HARD_BLOCK_KEYWORDS = [
+    // 內建預設值，凍結後不再變動——「重新載入設定檔」與匯入合併都以此為復原基準。
+    // 若要新增自訂硬阻斷關鍵字，請透過「管理自訂防護規則」介面匯入，不要直接改這裡。
+    const HARD_BLOCK_KEYWORDS_DEFAULT = Object.freeze([
       "自閉症", "鑑輔會", "性平通報", "性騷擾", "性侵害", "家暴", "家庭暴力", "保護管束", "心理諮商紀錄", "特教身分", "身心障礙手冊", "身心障礙證明", "重大傷病", "自傷", "低收入戶證明",
       "個別化教育計畫", "IEP", "心評報告", "輔導晤談", "高關懷個案", "學諮中心", "自我傷害", "自傷舉動", "家暴通報", "兒少保護", "緊急安置", "性平會", "專案調查小組", "中低收入戶", "弱勢助學補助", "弱勢助學", "就學貸款",
       "特教與身心障礙", "心理輔導與諮商", "兒少保護與家暴事件", "性別平等事件", "特殊經濟弱勢"
-    ];
-    
-    // 若要新增正規表示式，請依此格式新增物件： { type: "標籤名", regex: /您的正規表示式/g, name: "中文名稱", example: "偵測範例" }
-    const REGEX_RULES = [
+    ]);
+
+    // 內建預設值，凍結後不再變動。若要新增自訂正則規則，請透過「管理自訂防護規則」介面匯入。
+    const REGEX_RULES_DEFAULT = Object.freeze([
       // 1. 身份識別、日期與通訊資料
       { type: "ID_CARD", regex: /[A-Z][12]\d{8}/g, name: "身分證字號", example: "A123456789" },
       { type: "ARC_ID", regex: /[A-Z][A-D89]\d{8}/g, name: "居留證號", example: "A800000014" },
@@ -813,7 +817,79 @@
       { type: "DOC_NUM", regex: /\b[A-Z]\d{10}\b/g, name: "公文字號", example: "A1234567890" },
       { type: "VENDOR", regex: /[\u4e00-\u9fa5a-zA-Z0-9]+(?:股份有限公司|有限公司|企業社|工作室|商行)/g, name: "投標/得標廠商名稱", example: "台灣資訊股份有限公司" },
       { type: "AMOUNT", regex: /(?:(?:NT\$|\$)\s*\d{1,3}(?:,\d{3})*(?:\.\d+)?)|(?:\b\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*(?:元|萬元|千元))/g, name: "經費預算/核銷金額", example: "1,250,000 元" }
-    ];
+    ]);
+
+    // 地端 AI 掃描的兩段提示詞，{{TEXT}} 會在呼叫時替換成實際待掃描文字。
+    const AI_PROMPTS_DEFAULT = Object.freeze({
+      channel1: `找出下文中未遮蔽的「人名(PERSON)」(含各種稱謂組合格式，包括：稱謂在前如「國文教師林大為」、「數學老師張美麗」；稱謂在後如「黃曉美老師」；冒號分隔如「學生：王小明」；以及單純人名或小名/暱稱如「陳建國」、「老王」。請將姓名部分完整提取為PERSON類別，不包含職稱)、「廠商機構/店家(VENDOR)」(包含未寫明公司的店家，如「大方餐飲店」、「快樂商行」)、「地址(ADDRESS)」、「專案/活動名稱(PROJECT)」與「銀行/撥款帳號(BANK_ACCT)」。\n僅回傳 JSON 陣列如 [{"type":"PERSON","value":"王大","reason":"..."}]。若無發現請回傳 []。文：\n{{TEXT}}`,
+      channel2: `判斷以下文章是否包含「特敏資訊」。特敏資訊包含：自我傷害、自殺、性騷擾、性侵害、家庭暴力、保護管束、特殊教育需求(如自閉症、過動等症狀或心評報告)、心理諮商與治療紀錄。\n如果包含上述任何一種情境，請務必回傳 JSON 格式：{"critical": true, "reason": "說明具體的風險內容"}\n如果不包含，請回傳：{"critical": false, "reason": ""}\n\n文：\n{{TEXT}}`
+    });
+
+    // ==========================================
+    // 自訂防護狀態：內建預設 → 即時運作狀態
+    // ==========================================
+    function parsePatternColumn(raw) {
+      const m = /^\/(.*)\/([a-z]*)$/i.exec((raw || '').trim());
+      if (m) return { pattern: m[1], flags: m[2] || 'g' };
+      return { pattern: (raw || '').trim(), flags: 'g' };
+    }
+
+    function tryCompileRegexRow(row, idx) {
+      try {
+        const { pattern, flags } = parsePatternColumn(row.pattern);
+        const finalFlags = flags.includes('g') ? flags : flags + 'g';
+        new RegExp(pattern, finalFlags); // 僅用於驗證，丟例外代表 pattern 不合法
+        return {
+          ok: true,
+          entry: {
+            type: row.type || 'CUSTOM',
+            pattern, flags: finalFlags,
+            name: row.name || pattern,
+            example: row.example || '',
+            source: row.source || 'manual'
+          }
+        };
+      } catch (err) {
+        return { ok: false, idx, raw: row, error: err.message };
+      }
+    }
+
+    function buildDefaultHardBlockState() {
+      return HARD_BLOCK_KEYWORDS_DEFAULT.map(value => ({ value, source: 'builtin' }));
+    }
+    function buildDefaultRegexState() {
+      return REGEX_RULES_DEFAULT.map(r => ({
+        type: r.type, pattern: r.regex.source, flags: r.regex.flags,
+        name: r.name, example: r.example, source: 'builtin'
+      }));
+    }
+    function buildDefaultAiPromptsState() {
+      return { channel1: AI_PROMPTS_DEFAULT.channel1, channel2: AI_PROMPTS_DEFAULT.channel2 };
+    }
+    function initCustomProtectionState() {
+      hardBlockKeywords = buildDefaultHardBlockState();
+      regexRules = buildDefaultRegexState();
+      aiPrompts = buildDefaultAiPromptsState();
+    }
+
+    function getHardBlockKeywordValues() {
+      return hardBlockKeywords.map(e => e.value);
+    }
+    function getRegexRuleList() {
+      return regexRules;
+    }
+
+    const SOURCE_BADGE_LABELS = {
+      builtin: '內建預設', 'auto-loaded': '腳本自動載入', manual: '手動匯入',
+      overridden: '自訂覆蓋', 'ai-session': 'AI 擷取(暫存)'
+    };
+    function sourceBadgeHtml(source) {
+      const label = SOURCE_BADGE_LABELS[source] || source || '';
+      if (!label) return '';
+      return ` <span class="badge-source badge-${source}" style="font-size:10px;padding:1px 6px;border-radius:9999px;background:#e7e5e4;color:#57534e;margin-left:4px;white-space:nowrap;">${label}</span>`;
+    }
+
+    initCustomProtectionState(); // 開機先套用內建預設值，稍後再嘗試自動載入設定檔（見檔案結尾）
 
     // ==========================================
     // UI 控制與頁籤切換
@@ -859,18 +935,18 @@
 
     function openSettings() { openModal('settingsModal'); }
     function closeSettings() { closeModal('settingsModal'); }
-    function openGuide() { 
+    function openGuide() {
       const tbody = document.getElementById("guideTableBody");
-      tbody.innerHTML = REGEX_RULES.map(rule => `
+      tbody.innerHTML = getRegexRuleList().map(rule => `
         <tr>
-          <td class="px-4 py-2">${rule.name}</td>
+          <td class="px-4 py-2">${rule.name}${sourceBadgeHtml(rule.source)}</td>
           <td class="px-4 py-2 font-mono text-xs">${rule.type}_X</td>
           <td class="px-4 py-2 text-stone-500">${rule.example || ''}</td>
-          <td class="px-4 py-2 font-mono text-[10px] break-all">${escapeHtml(rule.regex.toString())}</td>
+          <td class="px-4 py-2 font-mono text-[10px] break-all">${escapeHtml(`/${rule.pattern}/${rule.flags}`)}</td>
         </tr>
       `).join('');
-      document.getElementById("guideHardBlockList").innerText = HARD_BLOCK_KEYWORDS.join("、");
-      openModal('guideModal'); 
+      document.getElementById("guideHardBlockList").innerText = getHardBlockKeywordValues().join("、");
+      openModal('guideModal');
     }
     function closeGuide() { closeModal('guideModal'); }
     function toggleGuideInstructions() {
@@ -1163,7 +1239,7 @@
       
       customDict = [];
       data.forEach(item => {
-        customDict.push({ type: item.type || 'CUSTOM', value: item.kw, reason: "線上建立詞庫" });
+        customDict.push({ type: item.type || 'CUSTOM', value: item.kw, reason: "線上建立詞庫", source: 'manual' });
       });
       
       document.getElementById('dictCountLabel').innerText = `詞庫: ${customDict.length}`;
@@ -1218,7 +1294,7 @@
             }
             if (val) {
                 const type = (parts[1] && parts[1].trim()) ? parts[1].trim().toUpperCase() : 'CUSTOM';
-                customDict.push({ type, value: val, reason: "自訂詞庫" });
+                customDict.push({ type, value: val, reason: "自訂詞庫", source: 'manual' });
             }
         }
         
@@ -1464,7 +1540,7 @@
       if (val) {
         if (action === "add") {
           whitelist.delete(val);
-          customDict.push({ type: 'CUSTOM', value: val, reason: "手動選取加入" });
+          customDict.push({ type: 'CUSTOM', value: val, reason: "手動選取加入", source: 'manual' });
         } else if (action === "remove") {
           addToWhitelist(val);
         }
@@ -1503,14 +1579,21 @@
         }
       };
 
-      HARD_BLOCK_KEYWORDS.forEach(kw => addEnt("CRITICAL", kw, "極敏感詞彙", false, true));
+      getHardBlockKeywordValues().forEach(kw => addEnt("CRITICAL", kw, "極敏感詞彙", false, true));
       customDict.forEach(item => addEnt(item.type, item.value, item.reason, item.isAi, false));
-      
-      REGEX_RULES.forEach(rule => {
+
+      getRegexRuleList().forEach(rule => {
+        let regex;
+        try {
+          regex = new RegExp(rule.pattern, rule.flags);
+        } catch (err) {
+          console.warn(`[EduShield] 規則 ${rule.type} 的正則已失效，略過：${err.message}`);
+          return;
+        }
         let match;
-        const regex = new RegExp(rule.regex);
         while ((match = regex.exec(text)) !== null) {
           entities.push({ type: rule.type, value: match[0], reason: rule.name, isAi: false, isCritical: false, start: match.index, end: match.index + match[0].length });
+          if (match[0].length === 0) regex.lastIndex++; // 避免零寬比對造成無窮迴圈
         }
       });
 
@@ -1670,7 +1753,7 @@
       sessionVault = {};
       reportData = [];
 
-      const blockedHits = HARD_BLOCK_KEYWORDS.filter(kw => text.includes(kw));
+      const blockedHits = getHardBlockKeywordValues().filter(kw => text.includes(kw));
       const isHardBlocked = blockedHits.length > 0;
       if (isHardBlocked) {
         triggerHardBlock([`靜態關鍵字攔截：偵測到「${blockedHits.join('」、「')}」`]);
@@ -1815,7 +1898,7 @@
           signal: controller.signal,
           body: JSON.stringify({
             model: model,
-            prompt: `找出下文中未遮蔽的「人名(PERSON)」(含各種稱謂組合格式，包括：稱謂在前如「國文教師林大為」、「數學老師張美麗」；稱謂在後如「黃曉美老師」；冒號分隔如「學生：王小明」；以及單純人名或小名/暱稱如「陳建國」、「老王」。請將姓名部分完整提取為PERSON類別，不包含職稱)、「廠商機構/店家(VENDOR)」(包含未寫明公司的店家，如「大方餐飲店」、「快樂商行」)、「地址(ADDRESS)」、「專案/活動名稱(PROJECT)」與「銀行/撥款帳號(BANK_ACCT)」。\n僅回傳 JSON 陣列如 [{"type":"PERSON","value":"王大","reason":"..."}]。若無發現請回傳 []。文：\n${currentText}`,
+            prompt: aiPrompts.channel1.split('{{TEXT}}').join(currentText),
             stream: true, format: "json"
           })
         });
@@ -1899,7 +1982,7 @@
             sessionVault[token] = item.value;
             reportData.push({ raw: item.value, token: token, reason: item.reason || "AI 實體擷取", isAi: true });
             newText = newText.split(item.value).join(token);
-            customDict.push({ type: tType, value: item.value, reason: item.reason || "AI 實體擷取", isAi: true });
+            customDict.push({ type: tType, value: item.value, reason: item.reason || "AI 實體擷取", isAi: true, source: 'ai-session' });
             newCount++;
           }
         });
@@ -1916,7 +1999,7 @@
           signal: controller.signal,
           body: JSON.stringify({
             model: model,
-            prompt: `判斷以下文章是否包含「特敏資訊」。特敏資訊包含：自我傷害、自殺、性騷擾、性侵害、家庭暴力、保護管束、特殊教育需求(如自閉症、過動等症狀或心評報告)、心理諮商與治療紀錄。\n如果包含上述任何一種情境，請務必回傳 JSON 格式：{"critical": true, "reason": "說明具體的風險內容"}\n如果不包含，請回傳：{"critical": false, "reason": ""}\n\n文：\n${currentText}`,
+            prompt: aiPrompts.channel2.split('{{TEXT}}').join(currentText),
             stream: true, format: "json"
           })
         });
