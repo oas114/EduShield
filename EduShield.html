@@ -908,13 +908,13 @@
     // 內建預設值，凍結後不再變動。若要新增自訂正則規則，請透過「管理自訂防護規則」介面匯入。
     const REGEX_RULES_DEFAULT = Object.freeze([
       // 1. 身份識別、日期與通訊資料
-      { type: "ID_CARD", regex: /[A-Z][12]\d{8}/g, name: "身分證字號", example: "A123456789" },
-      { type: "ARC_ID", regex: /[A-Z][A-D89]\d{8}/g, name: "居留證號", example: "A800000014" },
+      { type: "ID_CARD", regex: /\b[A-Z][12]\d{8}\b/g, name: "身分證字號", example: "A123456789" },
+      { type: "ARC_ID", regex: /\b[A-Z][A-D89]\d{8}\b/g, name: "居留證號", example: "A800000014" },
       { type: "ROC_DATE", regex: /(?:民國\s*)?(\d{2,3})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?/g, name: "民國日期", example: "民國112年8月15日" },
       { type: "ROC_DATE_NUM", regex: /\b\d{2,3}[\/.-]\d{1,2}[\/.-]\d{1,2}\b/g, name: "民國日期(數)", example: "112/08/15" },
       { type: "DATE", regex: /\b(19\d{2}|20\d{2})[-/.年]\s*(0?[1-9]|1[0-2])[-/.月]\s*(0?[1-9]|[12]\d|3[01])日?\b/g, name: "西元日期", example: "2026/08/19" },
-      { type: "PHONE", regex: /09\d{2}-?\d{3}-?\d{3}/g, name: "行動電話", example: "0912-345-678" },
-      { type: "TEL", regex: /0\d{1,2}-?\d{7,8}(?:\s*(?:#|分機|ext\.?)\s*\d{1,5})?/gi, name: "市話/分機", example: "02-23456789#123" },
+      { type: "PHONE", regex: /\b09\d{2}-?\d{3}-?\d{3}\b/g, name: "行動電話", example: "0912-345-678" },
+      { type: "TEL", regex: /\b0(?!9)\d{1,2}-?\d{7,8}(?:\s*(?:#|分機|ext\.?)\s*\d{1,5})?\b/gi, name: "市話/分機", example: "02-23456789#123" },
       { type: "EMAIL", regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, name: "電子郵件", example: "user@mail.edu.tw" },
       { type: "ADDRESS", regex: /(?:\d{3,6}\s*)?(?:(?:[臺台][北中南東]|新北|桃園|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|[臺台]東|澎湖|金門|連江)[縣市])(?:[\u4e00-\u9fa5]{2,4}[區市鎮鄉])(?:[\u4e00-\u9fa5]{1,10}[路街道段區里村])(?:\d+巷)?(?:\d+弄)?(?:\d+號)(?:之\d+)?(?:\d+樓)?/g, name: "台灣戶籍/通訊地址", example: "406 台中市北屯區崇德路三段100號" },
       
@@ -1245,7 +1245,7 @@
     function downloadRegexCsvTemplate() {
       const csvContent = "﻿替換標籤,規則名稱,正規表示式,說明範例\n" +
         'CUSTOM_CODE,自訂代碼,"CODE-\\d{4}",CODE-1234\n' +
-        'CUSTOM_TEL2,市話(範例),"/0\\d{1,2}-?\\d{7,8}/gi",02-23456789\n';
+        'CUSTOM_TEL2,市話(範例),"/\\b0(?!9)\\d{1,2}-?\\d{7,8}\\b/gi",02-23456789\n';
       downloadTextAsFile(csvContent, 'EduShield_正則規則範本.csv', 'text/csv;charset=utf-8;');
     }
 
