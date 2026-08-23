@@ -6,12 +6,10 @@ ATTENTION ALL AI ASSISTANTS:
 If you modify `EduShield.html` and your modifications include ANY changes, additions, or removals of Tailwind CSS utility classes, you MUST recompile the local CSS fallback file.
 Failure to do so will break the application for users in offline environments.
 
-IMPORTANT: as of the母資料夾 (parent workspace folder) restructure, the Tailwind build tooling (`dev/`) is SHARED and lives ONE LEVEL UP from this repo, not inside it — this repo (`EduShield/`) is a sibling of `TokenShield/`, both under the same parent workspace folder.
-
 To recompile:
-1. Open a terminal, navigate to the shared `dev/` folder in the parent workspace folder (one level up from this repo root).
+1. Open terminal, navigate to the `dev/` folder inside the project root.
 2. Run the build script: `npm run build:css`
-(This compiles a master `style.css` in the parent folder AND automatically copies it into both `EduShield/style.css` and `TokenShield/style.css` — see the parent folder's `CLAUDE.md` for the full convention.)
+(This will output the updated `style.css` to the project root.)
 [AI_SYSTEM_INSTRUCTIONS_END]
 -->
 
@@ -272,15 +270,27 @@ Token 格式規則：
 > [!IMPORTANT]
 > 當斷網環境開啟系統時，瀏覽器會嘗試讀取同資料夾的 `style.css`。若此檔不存在，將顯示防呆引導畫面。
 
-#### 共用建置工具已搬到母資料夾層級
+#### 開發環境初始化（已完成，僅需執行一次）
 
 > [!NOTE]
-> 自從新增 `TokenShield` 姊妹專案後，Tailwind CSS 建置工具（`dev/`）已從本 repo 移出，改為**母資料夾層級的共用工具**，與 `EduShield/`、`TokenShield/` 兩個獨立 repo 同層，路徑為 `../dev/`（相對於本 repo 根目錄）。這個 `dev/` 資料夾**不屬於任何一個 git repo**，是純本地端的共用開發工具。
+> 為了保持專案目錄整潔，所有 Tailwind CSS 相關的開發工具檔案已移至 **`dev/`** 資料夾中。
 
-母資料夾層級的 `dev/tailwind.config.js`（節錄，`content` 同時掃描兩個子 repo）：
+以下步驟**已執行完畢**，相關檔案（`dev/package.json`、`dev/tailwind.config.js`、`dev/input.css`）均已存在，無需重複執行。
+
+```powershell
+# 1. 建立並進入 dev 資料夾
+mkdir dev; cd dev
+
+# 2. 初始化 npm 專案並安裝 Tailwind CSS v3
+npm init -y
+npm install --save-dev tailwindcss@3
+```
+
+**`dev/tailwind.config.js`**：
+（注意 `content` 路徑指向上一層目錄的 HTML 檔案）
 ```javascript
 module.exports = {
-  content: ["../EduShield/*.html", "../TokenShield/*.html"],
+  content: ["../*.html"],
   theme: { extend: {
     fontFamily: {
       sans: ['Inter','ui-sans-serif','system-ui','-apple-system','sans-serif'],
@@ -292,56 +302,55 @@ module.exports = {
 };
 ```
 
+**`dev/input.css`**：
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
 ---
 
 #### 每次修改 EduShield.html 後的固定重新編譯流程
 
 > [!IMPORTANT]
-> 每當 `EduShield.html` 有新增或修改 Tailwind class 時，必須重新執行以下指令，確保斷網備援正確呈現完整樣式。**編譯結果需要複製進本 repo，才能被 GitHub 追蹤到。**
+> 每當 `EduShield.html` 有新增或修改 Tailwind class 時，必須重新執行以下指令，確保斷網備援正確呈現完整樣式。
 
-請開啟終端機，切換到**母資料夾層級**的 `dev` 資料夾後執行編譯：
+請開啟終端機，**進入 `dev` 資料夾**後執行編譯：
 
 ```powershell
-# 從本 repo (EduShield/) 切換到母資料夾的 dev
-cd ../dev
+# 進入 dev 資料夾
+cd dev
 
-# 執行編譯：輸出母層 master ../style.css，並自動複製一份進
-# ../EduShield/style.css 與 ../TokenShield/style.css
+# 執行編譯（會將 style.css 輸出到上一層的根目錄）
 npm run build:css
 ```
 
-此指令定義於母層 `dev/package.json` 的 `scripts`，等同於：
+此指令定義於 `dev/package.json` 的 `scripts`，等同於：
 ```powershell
-tailwindcss -i ./input.css -o ../style.css --minify && node copy-css.js
+tailwindcss -i ./input.css -o ../style.css --minify
 ```
 
-`copy-css.js` 就是負責把母層編譯出的 `style.css` 複製進兩個子 repo 的那支小腳本——**這一步是本專案改為多 repo 架構後新增的關鍵同步機制，請勿略過**，否則子 repo 內的 `style.css` 會與最新原始碼脫節。
-
-#### 目前資料夾結構（母資料夾架構）
+#### 目前資料夾結構
 
 ```text
-（母資料夾，非 git repo）/
-├── dev/                            <- 📁 共用 Tailwind 開發工具（不屬於任一 repo）
-│   ├── input.css / tailwind.config.js / package.json / copy-css.js
-├── style.css                       <- 母層 master 編譯輸出
-├── public/                         <- 給 oasgrow.com 用，另一個機制部署，與本 repo 無關
-├── EduShield/                      <- ✅ 本 repo
-│   ├── EduShield.html              <- 主程式（含三段混合載入邏輯）
-│   ├── docs/
-│   │   ├── EduShield_README.md         <- 技術說明手冊（本文件）
-│   │   ├── EduShield_README.en.md      <- 技術說明手冊（英文版）
-│   │   └── EduShield_Test_Scenarios.md <- 測試情境演練手冊
-│   ├── README.md                   <- 專案介紹文件
-│   ├── LICENSE                     <- 授權條款 (MIT)
-│   ├── .gitignore                  <- Git 忽略設定
-│   ├── .nojekyll                   <- GitHub Pages 靜態網站設定
-│   └── style.css                   <- ✅ 已編譯的本地備援樣式表（從母層複製進來）
-└── TokenShield/                    <- 姊妹 repo（獨立專案，詳見其自己的 README）
+EduShield/  (repo root)
+├── EduShield.html                      <- 主程式（含三段混合載入邏輯）
+├── docs/
+│   ├── EduShield_README.md             <- 技術說明手冊（本文件）
+│   ├── EduShield_README.en.md          <- 技術說明手冊（英文版）
+│   └── EduShield_Test_Scenarios.md     <- 測試情境演練手冊
+├── README.md / README.zh-TW.md         <- 專案介紹文件
+├── LICENSE                             <- 授權條款 (MIT)
+├── .gitignore / .nojekyll
+├── style.css                           <- ✅ 已編譯的本地備援樣式表
+└── dev/                                <- 📁 Tailwind 開發工具資料夾
+    ├── input.css / tailwind.config.js / package.json
 ```
 
 > [!NOTE]
-> **發佈給使用者時**，只需提供本 repo 根目錄的 **`EduShield.html`** 與 **`style.css`** 兩個檔案即可。
-> **`dev/`** 資料夾已搬到母資料夾層級、不屬於本 repo，開發專用，**請勿一同發佈給一般使用者**。
+> **發佈給使用者時**，只需提供根目錄的 **`EduShield.html`** 與 **`style.css`** 兩個檔案即可。
+> **`dev/`** 資料夾內的任何檔案與說明文件均為開發專用，**請勿一同發佈給一般使用者**。
 ---
 
 ## 五、關於本專案

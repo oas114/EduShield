@@ -6,12 +6,10 @@ ATTENTION ALL AI ASSISTANTS:
 If you modify `EduShield.html` and your modifications include ANY changes, additions, or removals of Tailwind CSS utility classes, you MUST recompile the local CSS fallback file.
 Failure to do so will break the application for users in offline environments.
 
-IMPORTANT: as of the parent-workspace-folder restructure, the Tailwind build tooling (`dev/`) is SHARED and lives ONE LEVEL UP from this repo, not inside it — this repo (`EduShield/`) is a sibling of `TokenShield/`, both under the same parent workspace folder.
-
 To recompile:
-1. Open a terminal, navigate to the shared `dev/` folder in the parent workspace folder (one level up from this repo root).
+1. Open terminal, navigate to the `dev/` folder inside the project root.
 2. Run the build script: `npm run build:css`
-(This compiles a master `style.css` in the parent folder AND automatically copies it into both `EduShield/style.css` and `TokenShield/style.css` — see the parent folder's `CLAUDE.md` for the full convention.)
+(This will output the updated `style.css` to the project root.)
 
 IMPORTANT SYNC NOTE:
 This file (`EduShield_README.en.md`) is a full English translation of `EduShield_README.md`.
@@ -293,15 +291,27 @@ Search for `<select id="ollamaModelSelect">` and add your institution's preferre
 > [!IMPORTANT]
 > When the app is opened in an offline environment, the browser attempts to load `style.css` from the same folder. If it doesn't exist, the failsafe guidance screen is displayed instead.
 
-#### Shared Build Tooling Now Lives in the Parent Workspace Folder
+#### Development Environment Setup (One-time, Already Complete)
 
 > [!NOTE]
-> Since the `TokenShield` sibling project was added, the Tailwind CSS build tooling (`dev/`) has moved out of this repo entirely and now lives at the **parent workspace folder level**, as `../dev/` (relative to this repo's root), alongside the `EduShield/` and `TokenShield/` repos. This `dev/` folder is **not tracked by either git repo** — it's local-only shared tooling.
+> To keep the project root clean, all Tailwind CSS build tools have been placed in the **`dev/`** subfolder.
 
-Parent-level `dev/tailwind.config.js` (excerpt — `content` scans both sibling repos):
+The following steps **have already been completed**. The files `dev/package.json`, `dev/tailwind.config.js`, and `dev/input.css` already exist — no need to repeat.
+
+```powershell
+# 1. Create and enter the dev folder
+mkdir dev; cd dev
+
+# 2. Initialize npm project and install Tailwind CSS v3
+npm init -y
+npm install --save-dev tailwindcss@3
+```
+
+**`dev/tailwind.config.js`**:
+(Note: `content` path points to the HTML file one level up)
 ```javascript
 module.exports = {
-  content: ["../EduShield/*.html", "../TokenShield/*.html"],
+  content: ["../*.html"],
   theme: { extend: {
     fontFamily: {
       sans: ['Inter','ui-sans-serif','system-ui','-apple-system','sans-serif'],
@@ -313,57 +323,56 @@ module.exports = {
 };
 ```
 
+**`dev/input.css`**:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
 ---
 
 #### Recompile Workflow (Required After Each Change to `EduShield.html`)
 
 > [!IMPORTANT]
-> Whenever Tailwind CSS utility classes are added or modified in `EduShield.html`, you **must** recompile `style.css` to ensure the offline fallback renders correctly. **The compiled output must be copied into this repo to be tracked by GitHub.**
+> Whenever Tailwind CSS utility classes are added or modified in `EduShield.html`, you **must** recompile `style.css` to ensure the offline fallback renders correctly.
 
-Open a terminal, navigate to the **parent-level** `dev/` folder, then run:
+Open a terminal, navigate to the `dev/` folder, then run:
 
 ```powershell
-# From this repo (EduShield/), go up to the parent workspace's dev/
-cd ../dev
+# Navigate to the dev folder
+cd dev
 
-# Builds the master ../style.css AND automatically copies it into
-# ../EduShield/style.css and ../TokenShield/style.css
+# Run the build (outputs style.css to the project root)
 npm run build:css
 ```
 
-This script is defined in the parent-level `dev/package.json` under `scripts`, equivalent to:
+This script is defined in `dev/package.json` under `scripts`, equivalent to:
 ```powershell
-tailwindcss -i ./input.css -o ../style.css --minify && node copy-css.js
+tailwindcss -i ./input.css -o ../style.css --minify
 ```
 
-`copy-css.js` is the script that copies the compiled `style.css` into both sibling repos — **this step is new since the move to a multi-repo layout; don't skip it**, or the `style.css` inside each repo will drift out of sync with the latest source.
-
-#### Current Project Structure (Parent Workspace Layout)
+#### Current Project Structure
 
 ```text
-(parent workspace folder, not a git repo)/
-├── dev/                            <- 📁 Shared Tailwind build tools (not part of either repo)
-│   ├── input.css / tailwind.config.js / package.json / copy-css.js
-├── style.css                       <- Parent-level master compiled output
-├── public/                         <- For oasgrow.com, deployed by a separate mechanism — unrelated to this repo
-├── EduShield/                      <- ✅ This repo
-│   ├── EduShield.html              <- Main application (three-tier CSS loading logic)
-│   ├── docs/
-│   │   ├── EduShield_README.md         <- Technical reference (Traditional Chinese, this file's counterpart)
-│   │   ├── EduShield_README.en.md      <- Technical reference (English, this file)
-│   │   └── EduShield_Test_Scenarios.md <- Hands-on test scenarios
-│   ├── README.md                   <- Project introduction (English)
-│   ├── README.zh-TW.md             <- Project introduction (Traditional Chinese)
-│   ├── LICENSE                     <- MIT License
-│   ├── .gitignore                  <- Git ignore configuration
-│   ├── .nojekyll                   <- GitHub Pages static site configuration
-│   └── style.css                   <- ✅ Compiled local CSS fallback (copied in from the parent build)
-└── TokenShield/                    <- Sibling repo (independent project, see its own README)
+EduShield/  (repo root)
+├── EduShield.html                      <- Main application (three-tier CSS loading logic)
+├── docs/
+│   ├── EduShield_README.md             <- Technical reference (Traditional Chinese, this file's counterpart)
+│   ├── EduShield_README.en.md          <- Technical reference (English, this file)
+│   └── EduShield_Test_Scenarios.md     <- Hands-on test scenarios
+├── README.md                           <- Project introduction (English)
+├── README.zh-TW.md                     <- Project introduction (Traditional Chinese)
+├── LICENSE                             <- MIT License
+├── .gitignore / .nojekyll
+├── style.css                           <- ✅ Compiled local CSS fallback (minified)
+└── dev/                                <- 📁 Tailwind build tools
+    ├── input.css / tailwind.config.js / package.json
 ```
 
 > [!NOTE]
-> **When distributing to end users**, only provide this repo's root-level **`EduShield.html`** and **`style.css`** files.
-> `dev/` now lives outside this repo entirely and is for development purposes only — **do not distribute it to general users**.
+> **When distributing to end users**, only provide the root-level **`EduShield.html`** and **`style.css`** files.
+> All files inside `dev/` and this documentation are for development purposes only — **do not distribute them to general users**.
 
 ---
 
