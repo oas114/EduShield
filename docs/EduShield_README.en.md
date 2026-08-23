@@ -361,8 +361,8 @@ EduShield/  (repo root)
 │   ├── EduShield_README.md             <- Technical reference (Traditional Chinese, this file's counterpart)
 │   ├── EduShield_README.en.md          <- Technical reference (English, this file)
 │   └── EduShield_Test_Scenarios.md     <- Hands-on test scenarios
-├── README.md                           <- Project introduction (English)
-├── README.zh-TW.md                     <- Project introduction (Traditional Chinese)
+├── README.md                            <- Project introduction (Traditional Chinese, primary)
+├── README.en.md                         <- Project introduction (English, secondary translation)
 ├── LICENSE                             <- MIT License
 ├── .gitignore / .nojekyll
 ├── style.css                           <- ✅ Compiled local CSS fallback (minified)

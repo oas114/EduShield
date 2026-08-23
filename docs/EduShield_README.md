@@ -340,7 +340,7 @@ EduShield/  (repo root)
 │   ├── EduShield_README.md             <- 技術說明手冊（本文件）
 │   ├── EduShield_README.en.md          <- 技術說明手冊（英文版）
 │   └── EduShield_Test_Scenarios.md     <- 測試情境演練手冊
-├── README.md / README.zh-TW.md         <- 專案介紹文件
+├── README.md / README.en.md             <- 專案介紹文件（中文為主／英文為輔）
 ├── LICENSE                             <- 授權條款 (MIT)
 ├── .gitignore / .nojekyll
 ├── style.css                           <- ✅ 已編譯的本地備援樣式表
