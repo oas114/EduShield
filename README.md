@@ -139,7 +139,7 @@ EduShield 預設的 `REGEX_RULES` 引擎針對**台灣**的身分識別碼與資
 * 提供 Personal（個人）／Business（企業）身分模式，各自對應獨立的硬阻斷詞庫
 * 全英文介面，並附上可直接複製使用的地端 AI 提示詞範本
 
-✨ **[前往 TokenShield 互動式體驗手冊](https://oasgrow.com/TokenShield/)** ｜ 技術文件：[TokenShield_README.zh-TW.md](https://github.com/oas114/TokenShield/blob/main/TokenShield_README.zh-TW.md)
+✨ **[前往 TokenShield 互動式體驗手冊](https://oasgrow.com/TokenShield/)** ｜ 技術文件：[TokenShield_README.zh-TW.md](https://github.com/oas114/TokenShield/blob/main/docs/TokenShield_README.zh-TW.md)
 
 ## 未來規劃
 

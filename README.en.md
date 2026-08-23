@@ -141,7 +141,7 @@ If you need something other than Taiwan-education-specific rules — an English-
 * Personal / Business persona toggle, each with its own Hard Block keyword set
 * Fully English UI, plus ready-to-copy local AI prompt templates
 
-✨ **[Try the TokenShield Interactive Manual](https://oasgrow.com/TokenShield/)** | Docs: [TokenShield_README.md](https://github.com/oas114/TokenShield/blob/main/TokenShield_README.md)
+✨ **[Try the TokenShield Interactive Manual](https://oasgrow.com/TokenShield/)** | Docs: [TokenShield_README.md](https://github.com/oas114/TokenShield/blob/main/docs/TokenShield_README.md)
 
 ## Roadmap
 
