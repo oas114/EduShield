@@ -5,3 +5,7 @@ node_modules/
 public/
 landing.html
 demo.html
+
+# AI Assistant Configs
+.agents/
+CLAUDE.md
