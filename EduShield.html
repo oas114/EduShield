@@ -279,11 +279,12 @@
       background-color: rgba(var(--danger-500-rgb), 0.45);
     }
 
-    /* 表格儲存格外框：inline-block + 緊縮行高，避免外框被 line-height 撐大、相鄰列外框緊貼 */
+    /* 表格儲存格外框：inline-block + 緊縮行高，避免外框被 line-height 撐大、相鄰列外框緊貼；
+       左右各留一點 margin，避免同一列相鄰儲存格的虛線外框因 outline 往外暈染而輕微重疊。 */
     .pii-table-cell {
       display: inline-block;
       line-height: 1.3;
-      margin-bottom: 4px;
+      margin: 0 2px 4px 2px;
     }
 
     /* 捲動條美化 */
@@ -329,7 +330,7 @@
           </div>
 
           <!-- 手機版：詞庫用小圖示 + 數字徽章取代完整文字按鈕，省下的寬度用來讓漢堡選單與頁籤同列。 -->
-          <button id="dictCountLabelMobile" onclick="openEditCsvModal()" title="自訂詞庫管理" aria-label="自訂詞庫管理" class="sm:hidden relative bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover p-1 rounded-lg transition-colors flex items-center justify-center">
+          <button id="dictCountLabelMobile" onclick="openEditCsvModal()" title="自訂詞庫管理" aria-label="自訂詞庫管理" class="lg:hidden relative bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover p-1 rounded-lg transition-colors flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 6h.008v.008H6V6z"/></svg>
             <span id="dictCountBadgeMobile" class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">0</span>
           </button>
@@ -337,7 +338,7 @@
           <!-- 手機版：收進「更多」選單。下拉選單的位置由 JS 計算（fixed，並夾在視窗範圍內），
                不用 CSS 的 right-0 錨定——因為這顆按鈕在換行後的工具列裡實際位置，會隨內容寬度變動，
                純 CSS 錨定可能會讓選單跑出畫面外。 -->
-          <div class="sm:hidden">
+          <div class="lg:hidden">
             <button id="moreMenuBtn" onclick="toggleMoreMenu()" title="更多" aria-label="更多" aria-expanded="false" aria-haspopup="true" class="bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover p-1 rounded-lg transition-colors flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
             </button>
@@ -361,7 +362,7 @@
 
       <!-- 桌面版限定：詞庫管理 + 指南/設定/管理規則圖示，靠右對齊（與 TokenShield 一致）。
            手機版收進上面的「更多」選單，不在這裡重複顯示。按鈕高度對齊左側頁籤（h-10）。 -->
-      <div class="hidden sm:flex items-center gap-1.5">
+      <div class="hidden lg:flex items-center gap-1.5">
         <button id="dictCountLabel" onclick="openEditCsvModal()" title="自訂詞庫管理" class="h-10 inline-flex items-center bg-white hover:bg-paper-hover text-ink-secondary px-3 rounded-lg text-xs font-mono transition-colors border border-line-strong">
           詞庫: 0
         </button>
@@ -520,12 +521,23 @@
             </div>
             <div id="integrityStatus" class="text-xs font-medium"></div>
           </div>
-          <div id="restoredOutputView" contenteditable="true" class="flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0 focus:outline-none focus:ring-2 focus:ring-brand-100 transition-shadow" style="tab-size: 4;"></div>
+          <div id="restoredOutputView" contenteditable="true" class="relative flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0 focus:outline-none focus:ring-2 focus:ring-brand-100 transition-shadow" style="tab-size: 4;"></div>
+          <div id="restoreBatchBar" class="hidden p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-ink-muted">已選取 <span id="restoreSelectedCount">0</span> 項</span>
+            <button onclick="applyRestoreBatchMaskState('2')" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors">半遮蔽已選取</button>
+            <button onclick="applyRestoreBatchMaskState('1')" class="bg-ink hover:bg-ink-hover text-white font-medium px-3 py-1.5 rounded-md transition-colors">全遮蔽已選取</button>
+            <button onclick="applyRestoreBatchMaskState('0')" class="bg-white border border-line-strong text-ink-hover px-3 py-1.5 rounded-md hover:bg-paper-hover transition-colors">取消遮蔽已選取</button>
+            <button onclick="clearRestoreSelection()" class="bg-white border border-line-strong text-ink-hover px-3 py-1.5 rounded-md hover:bg-paper-hover transition-colors">取消選取</button>
+          </div>
+          <p class="px-3 pt-2 text-xs text-ink-faint flex-shrink-0">提示：按住 Alt 拖曳可框選多筆項目批次遮蔽；一般拖曳仍可正常選取文字/編輯內容。</p>
           <div class="p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex gap-2">
             <button onclick="clearRestoredResult()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-sm whitespace-nowrap">
               清除結果
             </button>
-            <button onclick="copyRestoredResult()" class="flex-[3] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+            <button onclick="restoreSelectAll()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-sm whitespace-nowrap">
+              全選
+            </button>
+            <button onclick="copyRestoredResult()" class="flex-[2] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
               複製還原文字
             </button>
           </div>
@@ -561,15 +573,17 @@
         <div class="p-3 border-b border-line-soft bg-paper-sunken/50 flex-shrink-0">
           <label class="font-semibold text-sm text-ink">偵測結果（拖曳滑鼠可框選多筆，單點可循環切換單筆）</label>
         </div>
-        <div id="quickMaskOutput" class="relative flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0" style="tab-size: 4;">
+        <div id="quickMaskOutput" contenteditable="true" class="relative flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0 focus:outline-none focus:ring-2 focus:ring-brand-100 transition-shadow" style="tab-size: 4;">
           <span class="text-ink-faint italic text-xs">尚未偵測</span>
         </div>
         <div id="quickMaskBatchBar" class="hidden p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex flex-wrap items-center gap-2 text-xs">
           <span class="text-ink-muted">已選取 <span id="quickMaskSelectedCount">0</span> 項</span>
           <button onclick="applyBatchMaskState('2')" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors">半遮蔽已選取</button>
           <button onclick="applyBatchMaskState('1')" class="bg-ink hover:bg-ink-hover text-white font-medium px-3 py-1.5 rounded-md transition-colors">全遮蔽已選取</button>
+          <button onclick="applyBatchMaskState('0')" class="bg-white border border-line-strong text-ink-hover px-3 py-1.5 rounded-md hover:bg-paper-hover transition-colors">取消遮蔽已選取</button>
           <button onclick="clearQuickMaskSelection()" class="bg-white border border-line-strong text-ink-hover px-3 py-1.5 rounded-md hover:bg-paper-hover transition-colors">取消選取</button>
         </div>
+        <p class="px-3 pt-2 text-xs text-ink-faint flex-shrink-0">提示：按住 Alt 拖曳可框選多筆項目批次遮蔽；一般拖曳仍可正常選取文字/編輯內容。</p>
         <div class="p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex gap-2">
           <button onclick="quickMaskSelectAll()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-xs sm:text-sm whitespace-nowrap">
             全選
@@ -3209,7 +3223,7 @@
       const missing = [];
 
       Object.entries(sessionVault).forEach(([token, rawVal]) => {
-        const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${escapeHtml(rawVal)}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
+        const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${escapeHtml(rawVal)}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
         if (replyText.includes(token)) {
           html = html.split(token).join(span);
         } else {
@@ -3246,6 +3260,7 @@
 
       renderOriginalWithCapsules(missing);
       renderRestoreChips(missing);
+      clearRestoreSelection();
 
       // 動態收合：將輸入框高度變小
       document.getElementById("aiReplyInput").style.height = "60px";
@@ -3260,6 +3275,7 @@
       document.getElementById("integrityStatus").innerHTML = "";
       document.getElementById("aiReplyInput").style.height = "160px";
       renderOriginalWithCapsules([]);
+      clearRestoreSelection();
     }
 
     function copyRestoredResult() {
@@ -3613,7 +3629,8 @@
       if (text) navigator.clipboard.writeText(text).then(() => showToast("已複製遮蔽後文字！", 'success'));
     }
 
-    // 拖曳框選：在偵測結果空白處拖曳出矩形，框到的偵測項目一併加入「已選取」
+    // 拖曳框選：輸出區現在也可直接編輯（contenteditable），一般拖曳要保留給文字選取/編輯，
+    // 所以框選批次遮蔽改成「按住 Alt 拖曳」才觸發，避免手勢衝突。
     let quickMaskDragStart = null;
     let quickMaskSelectionBox = null;
     const quickMaskSelected = new Set();
@@ -3621,6 +3638,7 @@
     function initQuickMaskDragSelect() {
       const container = document.getElementById("quickMaskOutput");
       container.addEventListener('mousedown', (e) => {
+        if (!e.altKey) return; // 沒按 Alt 就是一般文字選取/編輯，不觸發框選
         if (e.target.closest('[data-mask-state]')) return; // 點在項目上走單點循環，不觸發框選
         quickMaskDragStart = { x: e.clientX, y: e.clientY };
         quickMaskSelectionBox = document.createElement('div');
@@ -3681,6 +3699,76 @@
       clearQuickMaskSelection();
     }
 
+    // 還原分頁的框選批次遮蔽：跟快速遮蔽輸出區同一套邏輯，一樣要求按住 Alt 才觸發，
+    // 因為 restoredOutputView 也是可編輯區域，一般拖曳要保留給文字選取/編輯。
+    let restoreDragStart = null;
+    let restoreSelectionBox = null;
+    const restoreSelected = new Set();
+
+    function initRestoreDragSelect() {
+      const container = document.getElementById("restoredOutputView");
+      container.addEventListener('mousedown', (e) => {
+        if (!e.altKey) return;
+        if (e.target.closest('[data-mask-state]')) return;
+        restoreDragStart = { x: e.clientX, y: e.clientY };
+        restoreSelectionBox = document.createElement('div');
+        restoreSelectionBox.className = 'fixed border-2 border-dashed border-brand-500 bg-brand-100/30 pointer-events-none z-50';
+        document.body.appendChild(restoreSelectionBox);
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!restoreDragStart) return;
+        const x = Math.min(restoreDragStart.x, e.clientX), y = Math.min(restoreDragStart.y, e.clientY);
+        const w = Math.abs(e.clientX - restoreDragStart.x), h = Math.abs(e.clientY - restoreDragStart.y);
+        Object.assign(restoreSelectionBox.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+      });
+      document.addEventListener('mouseup', () => {
+        if (!restoreDragStart) return;
+        const box = restoreSelectionBox.getBoundingClientRect();
+        document.querySelectorAll('#restoredOutputView [data-mask-state]').forEach(el => {
+          const r = el.getBoundingClientRect();
+          const hit = !(r.right < box.left || r.left > box.right || r.bottom < box.top || r.top > box.bottom);
+          if (hit) restoreToggleSelect(el, true);
+        });
+        restoreSelectionBox.remove();
+        restoreSelectionBox = null;
+        restoreDragStart = null;
+      });
+    }
+
+    function restoreToggleSelect(el, forceOn) {
+      const isSelected = restoreSelected.has(el);
+      if (forceOn || !isSelected) {
+        restoreSelected.add(el);
+        el.classList.add('ring-2', 'ring-brand-500');
+      } else {
+        restoreSelected.delete(el);
+        el.classList.remove('ring-2', 'ring-brand-500');
+      }
+      updateRestoreBatchBar();
+    }
+
+    function clearRestoreSelection() {
+      restoreSelected.forEach(el => el.classList.remove('ring-2', 'ring-brand-500'));
+      restoreSelected.clear();
+      updateRestoreBatchBar();
+    }
+
+    function updateRestoreBatchBar() {
+      const bar = document.getElementById("restoreBatchBar");
+      bar.classList.toggle('hidden', restoreSelected.size === 0);
+      document.getElementById("restoreSelectedCount").innerText = restoreSelected.size;
+    }
+
+    function restoreSelectAll() {
+      document.querySelectorAll('#restoredOutputView [data-mask-state]').forEach(el => restoreToggleSelect(el, true));
+    }
+
+    function applyRestoreBatchMaskState(targetState) {
+      restoreSelected.forEach(el => setMaskState(el, el.dataset.raw, targetState));
+      clearRestoreSelection();
+    }
+
     // 啟動與重整時清空所有輸入框，確保不殘留資訊
     window.addEventListener('load', () => {
       document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
@@ -3688,6 +3776,7 @@
       });
       clearLeftInput();
       initQuickMaskDragSelect();
+      initRestoreDragSelect();
     });
 
   </script>
