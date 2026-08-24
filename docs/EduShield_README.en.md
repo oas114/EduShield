@@ -145,6 +145,16 @@ Token naming rules:
 - Standard rules / dictionary / manual: `{{TYPE_N}}`
 - Table cell masking: `{{TAB_C{col+1}_{row counter}}}`
 
+#### Persistent Mapping Vault (`persistentVault`)
+
+`sessionVault` is cleared and rebuilt on every de-identification run, and tokens are sequential numbers — so the same original value can get a different token across different batches (or browser sessions), making cross-batch restore checks unreliable. The "Mapping Vault" button on the Restore tab lets you export the accumulated original-value ↔ token mapping to a file, then import it later so already-known values reuse their previous token instead of being renumbered.
+
+- **Unencrypted (CSV)**: three columns (original value / token / type), openable directly in Excel; a risk notice is shown before export (the file is plain text — avoid folders that auto-sync to the cloud).
+- **Encrypted (JSON)**: encrypted with a user-chosen password via the Web Crypto API (PBKDF2 key derivation + AES-GCM). If you forget the password, the file cannot be recovered — there is no backdoor.
+- On import, you choose to merge with or completely replace the current mapping.
+- Coordinate-based table masking tokens (`{{TAB_C...}}`) are positional and are not included in this vault.
+- This is a manual, one-off export/import feature — it is never written to browser storage automatically. `persistentVault` starts empty on every page load and must be re-imported each time.
+
 #### Restore Algorithm (`processRestore()`)
 
 1. Reads text content from `#aiReplyInput`

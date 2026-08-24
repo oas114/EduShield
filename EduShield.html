@@ -465,7 +465,10 @@
         </div>
 
         <div class="p-3 border-t border-line-soft bg-white flex-shrink-0">
-          <div class="text-xs font-medium text-ink-muted mb-2">遮蔽項目 (游標懸停檢視標籤)</div>
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-xs font-medium text-ink-muted">遮蔽項目 (游標懸停檢視標籤)</div>
+            <button onclick="openPersistentVaultModal()" class="text-xs bg-white border border-line-strong text-ink-hover px-2.5 py-1 rounded hover:bg-paper-sunken transition-colors">持久化對應表</button>
+          </div>
           <div id="restoreChips" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1 -m-1">
             <!-- Tooltip 互動膠囊 -->
           </div>
@@ -974,6 +977,81 @@
     </div>
   </div>
 
+  <!-- ==================== 持久化遮蔽對應儲存 Modal ==================== -->
+  <div id="persistentVaultModal" class="hidden fixed inset-0 bg-scrim/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-line">
+      <div class="px-6 py-4 border-b border-line-soft flex justify-between items-center bg-brand-50/50 flex-shrink-0">
+        <h2 class="text-sm font-bold text-brand-900">持久化遮蔽對應儲存</h2>
+        <button onclick="closeModal('persistentVaultModal')" class="text-ink-faint hover:text-ink-secondary font-medium text-lg">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 bg-white space-y-5">
+        <p class="text-xs text-ink-muted leading-relaxed">
+          匯出目前累積的「原始值 ↔ 遮蔽標籤」對應表，下次匯入後即可讓同一批原始值在不同批次處理時拿到一致的遮蔽標籤，方便跨批次核對還原結果。表格模式的欄位遮蔽（TAB_C 開頭）位置性較強，不包含在對應表內。
+        </p>
+        <p class="text-sm text-ink-hover">目前累積 <span id="vaultEntryCount" class="font-semibold text-brand-700">0</span> 筆對應</p>
+
+        <div class="space-y-2">
+          <div class="text-xs font-medium text-ink-secondary">匯出</div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="exportPersistentVaultEncryptedPrompt()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">匯出（加密，JSON）</button>
+            <button onclick="exportPersistentVaultUnencrypted()" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">匯出（未加密，CSV）</button>
+          </div>
+        </div>
+
+        <div class="border-t border-line-soft pt-4 space-y-2">
+          <div class="text-xs font-medium text-ink-secondary">匯入</div>
+          <input type="file" id="vaultFileInput" accept=".csv,.json" class="hidden" onchange="handlePersistentVaultFileUpload(event)" />
+          <button onclick="document.getElementById('vaultFileInput').click()" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">選擇對應表檔案（.csv / .json）</button>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex justify-end flex-shrink-0">
+        <button onclick="closeModal('persistentVaultModal')" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 對應表密碼輸入 Modal ==================== -->
+  <div id="vaultPasswordModal" class="hidden fixed inset-0 bg-scrim/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform duration-300 border border-line">
+      <div class="px-6 py-4 border-b border-line-soft bg-brand-50/50">
+        <h2 id="vaultPasswordModalTitle" class="text-sm font-bold text-brand-900">設定匯出密碼</h2>
+      </div>
+      <div class="p-6 space-y-3">
+        <div>
+          <label class="text-xs font-medium text-ink-secondary">密碼</label>
+          <input type="password" id="vaultPasswordInput1" class="mt-1 w-full text-sm p-2 border border-line-strong rounded focus:outline-none focus:border-brand-500" autocomplete="new-password">
+        </div>
+        <div id="vaultPasswordConfirmWrap">
+          <label class="text-xs font-medium text-ink-secondary">確認密碼</label>
+          <input type="password" id="vaultPasswordInput2" class="mt-1 w-full text-sm p-2 border border-line-strong rounded focus:outline-none focus:border-brand-500" autocomplete="new-password">
+        </div>
+        <p id="vaultPasswordError" class="hidden text-xs text-danger-600"></p>
+        <p class="text-xs text-ink-faint">忘記密碼將無法復原，沒有備用解密方式，請自行妥善保管。</p>
+      </div>
+      <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex justify-end gap-2">
+        <button onclick="closeModal('vaultPasswordModal')" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">取消</button>
+        <button onclick="confirmVaultPasswordModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 對應表匯入合併/取代 Modal ==================== -->
+  <div id="vaultImportModeModal" class="hidden fixed inset-0 bg-scrim/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 border border-line">
+      <div class="px-6 py-4 border-b border-line-soft bg-brand-50/50">
+        <h2 class="text-sm font-bold text-brand-900">匯入方式</h2>
+      </div>
+      <div class="p-6">
+        <p id="vaultImportModeMessage" class="text-sm text-ink-hover"></p>
+      </div>
+      <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex flex-col gap-2">
+        <button onclick="confirmVaultImportMode('merge')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors">新增並合併</button>
+        <button onclick="confirmVaultImportMode('replace')" class="px-4 py-2 bg-danger-600 hover:bg-danger-700 text-white rounded-lg text-sm font-semibold transition-colors">完全取代</button>
+        <button onclick="closeModal('vaultImportModeModal')" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">取消</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 全域提示框 ==================== -->
   <div id="globalTooltip" class="fixed z-[100] px-2 py-1 bg-ink text-white text-[10px] rounded whitespace-nowrap shadow-lg pointer-events-none transition-opacity duration-150 opacity-0 hidden"></div>
 
@@ -1001,7 +1079,8 @@
     let regexRules = []; // [{ type, pattern, flags, name, example, source }] — live working copy
     let aiPrompts = { channel1: '', channel2: '' }; // live working copy of AI_PROMPTS_DEFAULT
     let whitelist = new Set();
-    let sessionVault = {}; 
+    let sessionVault = {};
+    let persistentVault = { entries: {}, typeCounters: {} }; // { entries: { [原始值]: {token, typeKey} }, typeCounters: { [typeKey]: 最大編號 } } — 使用者手動匯入/取代前恆為空，不受 processAnonymizePhase1() 的清空邏輯影響
     let reportData = [];
     let debounceTimer;
     let activeExtractedEntities = []; 
@@ -1297,6 +1376,55 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // 持久化遮蔽對應儲存：加密/解密 helper
+    // ==========================================
+    function arrayBufferToBase64(buf) {
+      let binary = '';
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+    function base64ToArrayBuffer(b64) {
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes.buffer;
+    }
+    const VAULT_PBKDF2_ITERATIONS = 210000;
+    async function encryptVaultPayload(plainObj, password) {
+      const enc = new TextEncoder();
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+      const aesKey = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: VAULT_PBKDF2_ITERATIONS, hash: 'SHA-256' },
+        baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
+      );
+      const ciphertextBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, enc.encode(JSON.stringify(plainObj)));
+      return {
+        kdf: 'PBKDF2', hash: 'SHA-256', iterations: VAULT_PBKDF2_ITERATIONS,
+        salt: arrayBufferToBase64(salt), iv: arrayBufferToBase64(iv), ciphertext: arrayBufferToBase64(ciphertextBuf)
+      };
+    }
+    async function decryptVaultPayload(fileObj, password) {
+      const enc = new TextEncoder();
+      const salt = base64ToArrayBuffer(fileObj.salt);
+      const iv = base64ToArrayBuffer(fileObj.iv);
+      const ciphertext = base64ToArrayBuffer(fileObj.ciphertext);
+      const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+      const aesKey = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: fileObj.iterations || VAULT_PBKDF2_ITERATIONS, hash: fileObj.hash || 'SHA-256' },
+        baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+      );
+      try {
+        const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, ciphertext);
+        return JSON.parse(new TextDecoder().decode(plainBuf));
+      } catch (e) {
+        throw new Error('DECRYPT_FAILED');
+      }
     }
 
     // ==========================================
@@ -1635,6 +1763,157 @@
       clearTimeout(el._timer);
       el.classList.add('opacity-0');
       setTimeout(() => el.remove(), 300);
+    }
+
+    // ==========================================
+    // 持久化遮蔽對應儲存：Modal 互動邏輯
+    // ==========================================
+    let vaultPasswordModalMode = 'export'; // 'export' | 'import'
+    let pendingVaultImportFile = null; // 加密匯入時，暫存已讀入但尚未解密的檔案物件
+    let pendingVaultImport = null; // 已解析/解密完成、等待使用者選合併或取代的 { entries, typeCounters }
+
+    function openPersistentVaultModal() {
+      document.getElementById('vaultEntryCount').textContent = Object.keys(persistentVault.entries).length;
+      openModal('persistentVaultModal');
+    }
+
+    function vaultCsvEscape(v) {
+      return `"${String(v).replace(/"/g, '""')}"`;
+    }
+
+    async function exportPersistentVaultUnencrypted() {
+      const entries = persistentVault.entries;
+      const keys = Object.keys(entries);
+      if (keys.length === 0) { showToast('目前沒有累積的對應資料可以匯出。', 'warning'); return; }
+
+      const confirmed = await showConfirmModal(
+        '這個檔案會以明文儲存所有原始個資與對應的遮蔽標籤，不會加密。若這個檔案之後被同步到 OneDrive、Google Drive、iCloud 等雲端硬碟，或透過 Email／即時通訊軟體傳送，等同於把裡面的個資明文外流。請確認您了解這個風險，並妥善保管此檔案（例如只存放在不會自動同步的本機資料夾），再繼續匯出。',
+        { title: '未加密匯出風險提醒', okLabel: '仍要匯出明文檔案', cancelLabel: '取消', danger: true }
+      );
+      if (!confirmed) return;
+
+      let csvContent = '﻿原始值,token,類型\n';
+      keys.forEach(rawValue => {
+        const { token, typeKey } = entries[rawValue];
+        csvContent += `${vaultCsvEscape(rawValue)},${vaultCsvEscape(token)},${vaultCsvEscape(typeKey)}\n`;
+      });
+      downloadTextAsFile(csvContent, 'edushield-mapping-vault.csv', 'text/csv;charset=utf-8;');
+      showToast('已匯出未加密對應表（CSV）。', 'success');
+    }
+
+    function exportPersistentVaultEncryptedPrompt() {
+      if (Object.keys(persistentVault.entries).length === 0) { showToast('目前沒有累積的對應資料可以匯出。', 'warning'); return; }
+      vaultPasswordModalMode = 'export';
+      document.getElementById('vaultPasswordModalTitle').textContent = '設定匯出密碼';
+      document.getElementById('vaultPasswordConfirmWrap').classList.remove('hidden');
+      document.getElementById('vaultPasswordInput1').value = '';
+      document.getElementById('vaultPasswordInput2').value = '';
+      document.getElementById('vaultPasswordError').classList.add('hidden');
+      openModal('vaultPasswordModal');
+    }
+
+    async function confirmVaultPasswordModal() {
+      const pw1 = document.getElementById('vaultPasswordInput1').value;
+      const errorEl = document.getElementById('vaultPasswordError');
+      errorEl.classList.add('hidden');
+
+      if (vaultPasswordModalMode === 'export') {
+        const pw2 = document.getElementById('vaultPasswordInput2').value;
+        if (!pw1) { errorEl.textContent = '請輸入密碼。'; errorEl.classList.remove('hidden'); return; }
+        if (pw1 !== pw2) { errorEl.textContent = '兩次輸入的密碼不一致。'; errorEl.classList.remove('hidden'); return; }
+        const payload = await encryptVaultPayload({ entries: persistentVault.entries, typeCounters: persistentVault.typeCounters }, pw1);
+        const fileContent = JSON.stringify({
+          version: 1, product: 'EduShield', exportedAt: new Date().toISOString(), encrypted: true, ...payload
+        }, null, 2);
+        downloadTextAsFile(fileContent, 'edushield-mapping-vault.json', 'application/json;charset=utf-8;');
+        closeModal('vaultPasswordModal');
+        showToast('已匯出加密對應表（JSON）。', 'success');
+      } else {
+        if (!pw1) { errorEl.textContent = '請輸入密碼。'; errorEl.classList.remove('hidden'); return; }
+        try {
+          const decrypted = await decryptVaultPayload(pendingVaultImportFile, pw1);
+          pendingVaultImportFile = null;
+          closeModal('vaultPasswordModal');
+          openVaultImportModeDialog(decrypted);
+        } catch (e) {
+          errorEl.textContent = '密碼錯誤或檔案已損毀，請重新輸入或確認檔案內容。';
+          errorEl.classList.remove('hidden');
+        }
+      }
+    }
+
+    function handlePersistentVaultFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const isCsv = /\.csv$/i.test(file.name);
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        event.target.value = '';
+        if (isCsv) {
+          const lines = e.target.result.split(/\r\n|\n/).filter(l => l.trim() !== '');
+          let startIdx = 0;
+          if (lines[0] && lines[0].includes('原始值')) startIdx = 1;
+          const entries = {};
+          const typeCounters = {};
+          for (let i = startIdx; i < lines.length; i++) {
+            const parts = parseCsvLine(lines[i]);
+            const rawValue = parts[0] || '';
+            const token = parts[1] || '';
+            const typeKey = (parts[2] || '').toUpperCase();
+            if (!rawValue || !token) continue;
+            entries[rawValue] = { token, typeKey };
+            const m = token.match(/_(\d+)\}\}$/);
+            if (m && typeKey) typeCounters[typeKey] = Math.max(typeCounters[typeKey] || 0, parseInt(m[1], 10));
+          }
+          if (Object.keys(entries).length === 0) { showToast('檔案中沒有可用的對應資料列。', 'warning'); return; }
+          openVaultImportModeDialog({ entries, typeCounters });
+        } else {
+          let fileObj;
+          try { fileObj = JSON.parse(e.target.result); }
+          catch (err) { showToast('無法解析這個檔案，請確認是有效的 JSON 對應表檔案。', 'danger'); return; }
+
+          if (fileObj.encrypted) {
+            pendingVaultImportFile = fileObj;
+            vaultPasswordModalMode = 'import';
+            document.getElementById('vaultPasswordModalTitle').textContent = '輸入匯入密碼';
+            document.getElementById('vaultPasswordConfirmWrap').classList.add('hidden');
+            document.getElementById('vaultPasswordInput1').value = '';
+            document.getElementById('vaultPasswordError').classList.add('hidden');
+            openModal('vaultPasswordModal');
+          } else if (fileObj.vault) {
+            openVaultImportModeDialog(fileObj.vault);
+          } else {
+            showToast('檔案格式不正確，找不到可匯入的對應資料。', 'danger');
+          }
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function openVaultImportModeDialog(incomingVault) {
+      pendingVaultImport = incomingVault;
+      const existingCount = Object.keys(persistentVault.entries).length;
+      const incomingCount = Object.keys(incomingVault.entries).length;
+      document.getElementById('vaultImportModeMessage').innerText =
+        `偵測到目前已有 ${existingCount} 筆持久對應，本次匯入 ${incomingCount} 筆。請選擇如何處理：`;
+      openModal('vaultImportModeModal');
+    }
+
+    function confirmVaultImportMode(mode) {
+      if (!pendingVaultImport) { closeModal('vaultImportModeModal'); return; }
+      if (mode === 'replace') {
+        persistentVault = { entries: { ...pendingVaultImport.entries }, typeCounters: { ...pendingVaultImport.typeCounters } };
+      } else {
+        Object.assign(persistentVault.entries, pendingVaultImport.entries);
+        Object.keys(pendingVaultImport.typeCounters || {}).forEach(typeKey => {
+          persistentVault.typeCounters[typeKey] = Math.max(persistentVault.typeCounters[typeKey] || 0, pendingVaultImport.typeCounters[typeKey] || 0);
+        });
+      }
+      pendingVaultImport = null;
+      closeModal('vaultImportModeModal');
+      document.getElementById('vaultEntryCount').textContent = Object.keys(persistentVault.entries).length;
+      showToast('匯入完成。', 'success');
     }
 
     function openSettings() { openModal('settingsModal'); }
@@ -2460,16 +2739,24 @@
         resetHardBlockState();
       }
 
-      const typeCounters = {};
+      const typeCounters = { ...persistentVault.typeCounters };
       const valToToken = {};
       const tokenReplacements = [];
-      
+
       const sortedUnique = [...activeExtractedEntities].sort((a,b) => b.value.length - a.value.length);
       sortedUnique.forEach(ent => {
         if (!valToToken[ent.value]) {
           const typeKey = ent.type.toUpperCase();
-          typeCounters[typeKey] = (typeCounters[typeKey] || 0) + 1;
-          const token = `{{${typeKey}_${typeCounters[typeKey]}}}`;
+          const existing = persistentVault.entries[ent.value];
+          let token;
+          if (existing && existing.typeKey === typeKey) {
+            token = existing.token; // 沿用持久對應表的舊 token，維持跨批次一致性，不消耗新編號
+          } else {
+            typeCounters[typeKey] = (typeCounters[typeKey] || 0) + 1;
+            token = `{{${typeKey}_${typeCounters[typeKey]}}}`;
+            persistentVault.entries[ent.value] = { token, typeKey };
+            persistentVault.typeCounters[typeKey] = typeCounters[typeKey];
+          }
           valToToken[ent.value] = token;
           tokenReplacements.push({ val: ent.value, token: token });
           sessionVault[token] = ent.value;
