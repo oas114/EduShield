@@ -316,6 +316,9 @@
             <button id="tabBtn2" onclick="switchTab(2)" class="px-2 sm:px-5 py-1.5 text-xs sm:text-sm font-medium rounded-md text-ink-muted hover:text-ink-hover transition-all">
               還原
             </button>
+            <button id="tabBtn3" onclick="switchTab(3)" class="px-2 sm:px-5 py-1.5 text-xs sm:text-sm font-medium rounded-md text-ink-muted hover:text-ink-hover transition-all">
+              快速遮蔽
+            </button>
           </div>
 
           <!-- 手機版：詞庫用小圖示 + 數字徽章取代完整文字按鈕，省下的寬度用來讓漢堡選單與頁籤同列。 -->
@@ -521,6 +524,48 @@
           </div>
         </div>
 
+      </section>
+    </div>
+
+    <!-- ==================== 情境三：快速遮蔽（不經 AI、不建立對照表） ==================== -->
+    <div id="viewPhase3" class="hidden flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+
+      <!-- 左側：貼上原文 -->
+      <section class="flex-1 bg-white rounded-xl border border-line shadow-sm flex flex-col min-h-[40vh] lg:min-h-0">
+        <div class="p-3 border-b border-line-soft flex justify-between items-center bg-paper-sunken/50 flex-shrink-0">
+          <label class="font-semibold text-sm text-ink">原始文字</label>
+          <button onclick="document.getElementById('quickMaskInput').value = ''" class="text-xs text-ink-muted hover:text-ink transition-colors">清除內容</button>
+        </div>
+        <textarea id="quickMaskInput" class="flex-1 w-full p-4 text-sm bg-white resize-none font-mono focus:outline-none min-h-[30vh]" style="tab-size: 4;" placeholder="貼上要公告/分享的文字，例如錄取名單、聯絡資訊清單...&#10;此模式不送外部 AI、不建立任何對照表，離開或重新整理就不留痕跡。"></textarea>
+        <div class="p-4 border-t border-line-soft bg-paper-sunken flex-shrink-0">
+          <button onclick="processQuickMask()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm">
+            偵測
+          </button>
+        </div>
+      </section>
+
+      <!-- 右側：偵測結果、框選批次遮蔽 -->
+      <section class="flex-1 bg-white rounded-xl border border-line shadow-sm flex flex-col min-h-[40vh] lg:min-h-0">
+        <div class="p-3 border-b border-line-soft bg-paper-sunken/50 flex-shrink-0">
+          <label class="font-semibold text-sm text-ink">偵測結果（拖曳滑鼠可框選多筆，單點可循環切換單筆）</label>
+        </div>
+        <div id="quickMaskOutput" class="relative flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0" style="tab-size: 4;">
+          <span class="text-ink-faint italic text-xs">尚未偵測</span>
+        </div>
+        <div id="quickMaskBatchBar" class="hidden p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-ink-muted">已選取 <span id="quickMaskSelectedCount">0</span> 項</span>
+          <button onclick="applyBatchMaskState('2')" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors">半遮蔽已選取</button>
+          <button onclick="applyBatchMaskState('1')" class="bg-ink hover:bg-ink-hover text-white font-medium px-3 py-1.5 rounded-md transition-colors">全遮蔽已選取</button>
+          <button onclick="clearQuickMaskSelection()" class="bg-white border border-line-strong text-ink-hover px-3 py-1.5 rounded-md hover:bg-paper-hover transition-colors">取消選取</button>
+        </div>
+        <div class="p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex gap-2">
+          <button onclick="quickMaskSelectAll()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-xs sm:text-sm whitespace-nowrap">
+            全選
+          </button>
+          <button onclick="copyQuickMaskResult()" class="flex-[3] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+            複製遮蔽後文字
+          </button>
+        </div>
       </section>
     </div>
 
@@ -1657,11 +1702,12 @@
     function switchTab(tabId) {
       document.getElementById('viewPhase1').classList.toggle('hidden', tabId !== 1);
       document.getElementById('viewPhase2').classList.toggle('hidden', tabId !== 2);
+      document.getElementById('viewPhase3').classList.toggle('hidden', tabId !== 3);
 
       const activeCls = ['bg-white', 'shadow-sm', 'text-brand-600', 'font-semibold'];
       const inactiveCls = ['text-ink-muted', 'font-medium', 'hover:text-ink-hover'];
 
-      const btns = [document.getElementById('tabBtn1'), document.getElementById('tabBtn2')];
+      const btns = [document.getElementById('tabBtn1'), document.getElementById('tabBtn2'), document.getElementById('tabBtn3')];
 
       btns.forEach((btn, idx) => {
         if(!btn) return;
@@ -3227,22 +3273,152 @@
       resetHardBlockState(); // 確保清除內容時解除鎖定
     }
 
-    window.toggleMask = function(el, rawText) {
-      const currentState = el.dataset.maskState || "0";
+    // 依 data-category（快速遮蔽分頁）或 data-token（還原分頁，型別藏在 {{TYPE_N}} 裡）取出欄位類型
+    function getMaskCategory(el) {
+      const raw = el.dataset.category || el.dataset.token || "";
+      return raw.replace(/[{}]/g, '').replace(/_\d+$/, '').toUpperCase();
+    }
+
+    // 頭尾保留、中間符號取代的既有邏輯（姓名/地址/身分證號等預設樣式）
+    function genericPartialMask(rawText, maskSym) {
+      if (rawText.length <= 1) return "Ｏ";
+      if (rawText.length === 2) return rawText[0] + "Ｏ";
+      return rawText[0] + "Ｏ".repeat(rawText.length - 2) + rawText[rawText.length - 1];
+    }
+
+    // 依欄位類型分派半遮蔽樣式：電話只留末4碼、Email 只遮 local-part
+    function computePartialMask(rawText, category, maskSym) {
+      if (category.includes('PHONE')) {
+        let kept = 0;
+        return rawText.split('').reverse().map(ch => {
+          if (/\d/.test(ch)) { kept++; return kept <= 4 ? ch : maskSym; }
+          return ch;
+        }).reverse().join('');
+      }
+      if (category.includes('EMAIL')) {
+        const at = rawText.indexOf('@');
+        if (at <= 0) return genericPartialMask(rawText, maskSym);
+        return genericPartialMask(rawText.slice(0, at), maskSym) + rawText.slice(at);
+      }
+      return genericPartialMask(rawText, maskSym);
+    }
+
+    // 直接設成指定狀態（框選批次操作用），跟下方 toggleMask 的「循環」邏輯共用同一份實作
+    function setMaskState(el, rawText, state) {
       const maskSym = document.getElementById("customMaskSymbol").value || "■";
-      if (currentState === "0") {
+      if (state === "1") {
         el.innerText = maskSym.repeat(rawText.length);
-        el.dataset.maskState = "1";
-      } else if (currentState === "1") {
-        if (rawText.length <= 1) { el.innerText = "Ｏ"; } 
-        else if (rawText.length === 2) { el.innerText = rawText[0] + "Ｏ"; } 
-        else { el.innerText = rawText[0] + "Ｏ".repeat(rawText.length - 2) + rawText[rawText.length - 1]; }
-        el.dataset.maskState = "2";
+      } else if (state === "2") {
+        el.innerText = computePartialMask(rawText, getMaskCategory(el), maskSym);
       } else {
         el.innerText = rawText;
-        el.dataset.maskState = "0";
       }
+      el.dataset.maskState = state;
+    }
+
+    window.toggleMask = function(el, rawText) {
+      const current = el.dataset.maskState || "0";
+      const next = current === "0" ? "1" : current === "1" ? "2" : "0";
+      setMaskState(el, rawText, next);
     };
+
+    // ==========================================
+    // 快速遮蔽（獨立操作模式：不經 AI、不建立對照表）
+    // ==========================================
+    function processQuickMask() {
+      const text = document.getElementById("quickMaskInput").value;
+      const output = document.getElementById("quickMaskOutput");
+      if (!text.trim()) {
+        showToast("請先貼上文字", 'warning');
+        return;
+      }
+      const entities = extractStaticEntities(text);
+      let html = "";
+      let cursor = 0;
+      entities.forEach(ent => {
+        html += escapeHtml(text.slice(cursor, ent.start));
+        const raw = text.slice(ent.start, ent.end);
+        const escapedRaw = escapeHtml(raw);
+        html += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${ent.type}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${escapedRaw}')">${escapedRaw}</span>`;
+        cursor = ent.end;
+      });
+      html += escapeHtml(text.slice(cursor));
+      output.innerHTML = html || '<span class="text-ink-faint italic text-xs">未偵測到個資項目</span>';
+      clearQuickMaskSelection();
+    }
+
+    function copyQuickMaskResult() {
+      const text = document.getElementById("quickMaskOutput").innerText;
+      if (text) navigator.clipboard.writeText(text).then(() => showToast("已複製遮蔽後文字！", 'success'));
+    }
+
+    // 拖曳框選：在偵測結果空白處拖曳出矩形，框到的偵測項目一併加入「已選取」
+    let quickMaskDragStart = null;
+    let quickMaskSelectionBox = null;
+    const quickMaskSelected = new Set();
+
+    function initQuickMaskDragSelect() {
+      const container = document.getElementById("quickMaskOutput");
+      container.addEventListener('mousedown', (e) => {
+        if (e.target.closest('[data-mask-state]')) return; // 點在項目上走單點循環，不觸發框選
+        quickMaskDragStart = { x: e.clientX, y: e.clientY };
+        quickMaskSelectionBox = document.createElement('div');
+        quickMaskSelectionBox.className = 'fixed border-2 border-dashed border-brand-500 bg-brand-100/30 pointer-events-none z-50';
+        document.body.appendChild(quickMaskSelectionBox);
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!quickMaskDragStart) return;
+        const x = Math.min(quickMaskDragStart.x, e.clientX), y = Math.min(quickMaskDragStart.y, e.clientY);
+        const w = Math.abs(e.clientX - quickMaskDragStart.x), h = Math.abs(e.clientY - quickMaskDragStart.y);
+        Object.assign(quickMaskSelectionBox.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+      });
+      document.addEventListener('mouseup', () => {
+        if (!quickMaskDragStart) return;
+        const box = quickMaskSelectionBox.getBoundingClientRect();
+        document.querySelectorAll('#quickMaskOutput [data-mask-state]').forEach(el => {
+          const r = el.getBoundingClientRect();
+          const hit = !(r.right < box.left || r.left > box.right || r.bottom < box.top || r.top > box.bottom);
+          if (hit) quickMaskToggleSelect(el, true);
+        });
+        quickMaskSelectionBox.remove();
+        quickMaskSelectionBox = null;
+        quickMaskDragStart = null;
+      });
+    }
+
+    function quickMaskToggleSelect(el, forceOn) {
+      const isSelected = quickMaskSelected.has(el);
+      if (forceOn || !isSelected) {
+        quickMaskSelected.add(el);
+        el.classList.add('ring-2', 'ring-brand-500');
+      } else {
+        quickMaskSelected.delete(el);
+        el.classList.remove('ring-2', 'ring-brand-500');
+      }
+      updateQuickMaskBatchBar();
+    }
+
+    function clearQuickMaskSelection() {
+      quickMaskSelected.forEach(el => el.classList.remove('ring-2', 'ring-brand-500'));
+      quickMaskSelected.clear();
+      updateQuickMaskBatchBar();
+    }
+
+    function updateQuickMaskBatchBar() {
+      const bar = document.getElementById("quickMaskBatchBar");
+      bar.classList.toggle('hidden', quickMaskSelected.size === 0);
+      document.getElementById("quickMaskSelectedCount").innerText = quickMaskSelected.size;
+    }
+
+    function quickMaskSelectAll() {
+      document.querySelectorAll('#quickMaskOutput [data-mask-state]').forEach(el => quickMaskToggleSelect(el, true));
+    }
+
+    function applyBatchMaskState(targetState) {
+      quickMaskSelected.forEach(el => setMaskState(el, el.dataset.raw, targetState));
+      clearQuickMaskSelection();
+    }
 
     // 啟動與重整時清空所有輸入框，確保不殘留資訊
     window.addEventListener('load', () => {
@@ -3250,6 +3426,7 @@
         if(el.id !== 'ollamaUrl' && el.id !== 'ollamaModel') el.value = '';
       });
       clearLeftInput();
+      initQuickMaskDragSelect();
     });
 
   </script>
