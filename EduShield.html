@@ -2481,7 +2481,7 @@
             } else {
               cellHtml = renderRange(text, lineCursor, lineCursor + cellText.length);
             }
-            cellHtmls.push(`<span class="pii-table-cell outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
+            cellHtmls.push(`<span class="outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
             lineCursor += cellText.length + 1; // move past the tab
           });
           html += cellHtmls.join('\t') + '\n';
@@ -3407,7 +3407,7 @@
             } else {
               cellHtml = renderQuickMaskRange(text, lineCursor, lineCursor + cellText.length);
             }
-            cellHtmls.push(`<span class="pii-table-cell outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
+            cellHtmls.push(`<span class="outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
             lineCursor += cellText.length + 1;
           });
           html += cellHtmls.join('\t') + '\n';
