@@ -24,7 +24,7 @@ module.exports = {
         'ink-hover': 'var(--stone-700)',
         'ink-secondary': 'var(--stone-600)',
         'ink-muted': 'var(--stone-500)',
-        'ink-faint': 'var(--stone-400)',
+        'ink-faint': 'var(--stone-500)',
 
         line: 'var(--stone-200)',
         'line-strong': 'var(--stone-300)',

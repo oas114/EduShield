@@ -107,7 +107,7 @@
                   'ink-hover': 'var(--stone-700)',
                   'ink-secondary': 'var(--stone-600)',
                   'ink-muted': 'var(--stone-500)',
-                  'ink-faint': 'var(--stone-400)',
+                  'ink-faint': 'var(--stone-500)',
 
                   line: 'var(--stone-200)',
                   'line-strong': 'var(--stone-300)',
@@ -1727,7 +1727,7 @@
           <input type="text" class="csv-type-input w-full p-1.5 bg-transparent border border-transparent focus:border-brand-300 focus:bg-white rounded outline-none transition-all font-mono text-xs uppercase" value="${escapeHtml(type)}" placeholder="例如 NAME">
         </td>
         <td class="px-3 py-1.5 text-center">
-          <button onclick="handleCsvDeleteRow(this)" class="csv-delete-btn text-ink-faint hover:text-danger-600 focus:text-danger-600 focus:bg-danger-50 focus:outline-none transition-colors rounded p-1" title="刪除此列">
+          <button onclick="handleCsvDeleteRow(this)" class="csv-delete-btn text-ink-faint hover:text-danger-600 focus:text-danger-600 focus:bg-danger-50 focus:outline-none transition-colors rounded p-1" title="刪除此列" aria-label="刪除此列">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </td>
