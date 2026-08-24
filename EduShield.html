@@ -1933,18 +1933,18 @@
     
     function applyOnlineCsv() {
       const data = getOnlineCsvData();
-      if (data.length === 0) {
+      if (data.length === 0 && customDict.length === 0) {
         showToast("表格為空或沒有輸入任何關鍵字！", 'warning');
         return;
       }
-      
+
       customDict = [];
       data.forEach(item => {
         customDict.push({ type: item.type || 'CUSTOM', value: item.kw, reason: "線上建立詞庫", source: 'manual' });
       });
-      
+
       updateDictCountLabel();
-      showToast(`成功套用 ${customDict.length} 筆自訂詞庫！`, 'success');
+      showToast(data.length === 0 ? "已清空自訂詞庫！" : `成功套用 ${customDict.length} 筆自訂詞庫！`, 'success');
       closeEditCsvModal();
       triggerPreview();
     }
