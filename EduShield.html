@@ -434,14 +434,17 @@
           <textarea id="anonymizedOutput" readonly class="flex-1 w-full lg:absolute lg:inset-0 lg:h-full p-4 text-sm bg-white text-ink-secondary resize-none font-mono focus:outline-none overflow-y-auto" style="tab-size: 4; field-sizing: content;" placeholder="執行後將顯示於此..."></textarea>
         </div>
 
-        <div class="p-4 bg-paper-sunken border-t border-line-soft flex-shrink-0 flex gap-3">
-          <button id="phase2Btn" onclick="processAnonymizePhase2()" class="hidden flex-1 bg-accent-ai-600 hover:bg-accent-ai-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2">
-            <svg id="phase2Spinner" class="hidden animate-spin w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"></path></svg>
-            <span id="phase2BtnText" class="whitespace-nowrap truncate">透過地端 AI 深度掃描</span>
-          </button>
-          <button id="copyPromptBtn" onclick="copyAnonymizedPrompt()" disabled class="flex-1 bg-ink hover:bg-ink-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm text-center">
-            複製已遮蔽資料
-          </button>
+        <div class="p-4 bg-paper-sunken border-t border-line-soft flex-shrink-0">
+          <p id="layer1HintBanner" class="hidden text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded p-2 leading-relaxed mb-3">僅完成基礎掃描（正則比對），姓名等不規則個資可能仍未遮蔽，建議先執行「透過地端 AI 深度掃描」再複製。</p>
+          <div class="flex gap-3">
+            <button id="phase2Btn" onclick="processAnonymizePhase2()" class="hidden flex-1 bg-accent-ai-600 hover:bg-accent-ai-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2">
+              <svg id="phase2Spinner" class="hidden animate-spin w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"></path></svg>
+              <span id="phase2BtnText" class="whitespace-nowrap truncate">透過地端 AI 深度掃描</span>
+            </button>
+            <button id="copyPromptBtn" onclick="copyAnonymizedPrompt()" disabled class="flex-1 bg-ink hover:bg-ink-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm text-center">
+              複製已遮蔽資料
+            </button>
+          </div>
         </div>
       </section>
 
@@ -2510,7 +2513,9 @@
       if (!isHardBlocked) {
         copyBtn.disabled = false;
       }
-      
+      const layer1Hint = document.getElementById("layer1HintBanner");
+      if (layer1Hint) layer1Hint.classList.remove("hidden");
+
       // 問題②：完成後短暫顯示 "^✓ 完成" 再復原
       const phase1BtnText = document.getElementById('phase1BtnText');
       if (phase1BtnText) {
@@ -2559,6 +2564,8 @@
       const btnText = document.getElementById("phase2BtnText");
       const url = document.getElementById('ollamaUrl').value.trim();
       const model = document.getElementById('ollamaModel').value.trim();
+      const layer1Hint = document.getElementById("layer1HintBanner");
+      if (layer1Hint) layer1Hint.classList.add("hidden");
 
       try {
         const checkRes = await fetch(`${url}/api/tags`);
@@ -2566,6 +2573,7 @@
       } catch (err) {
         showToast("無法連線，地端 AI (Ollama) 可能未啟動或未設定 CORS。請先啟動 Ollama。", 'danger');
         phase2IsRunning = false;
+        if (layer1Hint) layer1Hint.classList.remove("hidden");
         return;
       }
       
