@@ -117,6 +117,8 @@ AI Channel 2 (risk assessment) can also trigger this flow if it returns `critica
 | Channel 1 | Entity Extraction | Identifies person names (with various title/honorific patterns), vendors/shops (including informal names without 公司/Co.), addresses, project names, account numbers | `[{"type":"PERSON","value":"...","reason":"..."}]` |
 | Channel 2 | Risk Assessment | Detects semantically sensitive content (self-harm, sexual assault, domestic violence, counseling records, special education needs, etc.) described in narrative form — even without triggering static hard-block keywords | `{"critical": true/false, "reason": "..."}` |
 
+> **Known accuracy limitation**: real-world testing shows Channel 1's `PERSON` extraction is not reliable — small models like `qwen2.5:3b` frequently miss names, since they're a free-form, highly context-dependent entity type. The UI's passive hint (`layer1HintBanner`) points users at the Custom Dictionary for names instead of the deep scan for this reason; treat Channel 1's `PERSON` output as best-effort, not authoritative.
+
 - **Streaming**: Uses `ReadableStream` + `TextDecoder` to parse NDJSON line-by-line, updating the button text in real time (e.g., `AI 掃描 (1/2) - 已收 N 字`) with `truncate` to prevent overflow.
 - **JSON Fault Tolerance**: Channel 1 supports Array / Object-wrapped Array / single Object response formats.
 - **Error Handling & Protection**:

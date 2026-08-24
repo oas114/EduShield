@@ -62,6 +62,8 @@ Integrates with [Ollama](https://ollama.com/) running on your own machine. No da
 - **Channel 1 (Entity Extraction)**: Catches entities that static regex cannot detect — informal person names, vendor shops without formal registration suffixes, internal project codenames, etc.
 - **Channel 2 (Risk Assessment)**: Performs semantic risk detection for sensitive *narratives* described in plain language (e.g., domestic violence situations, self-harm references, counseling records) — even when no hard-block keyword is used verbatim.
 
+> **Practical limits of name detection**: small local models are not yet consistently reliable at recognizing person names — a free-form, highly context-dependent entity type — so name masking should not rely on this layer alone. If your documents contain fixed, recurring names (e.g., a class roster, regular contacts), add them directly to the **Custom Dictionary** (manageable from the toolbar) to guarantee they're masked every time.
+
 Recommended model: `qwen2.5:3b` — runs well on older hardware and low-memory machines.
 
 ### Session Vault & Restore Mechanism
