@@ -467,7 +467,7 @@
         <div class="p-3 border-t border-line-soft bg-white flex-shrink-0">
           <div class="flex justify-between items-center mb-2">
             <div class="text-xs font-medium text-ink-muted">遮蔽項目 (游標懸停檢視標籤)</div>
-            <button onclick="openPersistentVaultModal()" class="text-xs bg-white border border-line-strong text-ink-hover px-2.5 py-1 rounded hover:bg-paper-sunken transition-colors">持久化對應表</button>
+            <button onclick="openPersistentVaultModal()" class="text-xs bg-white border border-line-strong text-ink-hover px-2.5 py-1 rounded hover:bg-paper-sunken transition-colors">標籤對照表</button>
           </div>
           <div id="restoreChips" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1 -m-1">
             <!-- Tooltip 互動膠囊 -->
@@ -981,14 +981,14 @@
   <div id="persistentVaultModal" class="hidden fixed inset-0 bg-scrim/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-line">
       <div class="px-6 py-4 border-b border-line-soft flex justify-between items-center bg-brand-50/50 flex-shrink-0">
-        <h2 class="text-sm font-bold text-brand-900">持久化遮蔽對應儲存</h2>
+        <h2 class="text-sm font-bold text-brand-900">標籤對照表</h2>
         <button onclick="closeModal('persistentVaultModal')" class="text-ink-faint hover:text-ink-secondary font-medium text-lg">&times;</button>
       </div>
       <div class="p-6 overflow-y-auto flex-1 bg-white space-y-5">
         <p class="text-xs text-ink-muted leading-relaxed">
-          匯出目前累積的「原始值 ↔ 遮蔽標籤」對應表，下次匯入後即可讓同一批原始值在不同批次處理時拿到一致的遮蔽標籤，方便跨批次核對還原結果。表格模式的欄位遮蔽（TAB_C 開頭）位置性較強，不包含在對應表內。
+          把「原始資料」對應到「哪個遮蔽標籤」的紀錄存成檔案，下次處理同一批資料時匯入回來，就能讓同一個人名、電話等資料維持同樣的遮蔽標籤，方便跨次核對還原結果。表格模式的欄位遮蔽（TAB_C 開頭）不會被記錄在這份對照表裡。
         </p>
-        <p class="text-sm text-ink-hover">目前累積 <span id="vaultEntryCount" class="font-semibold text-brand-700">0</span> 筆對應</p>
+        <p class="text-sm text-ink-hover">目前已收錄 <span id="vaultEntryCount" class="font-semibold text-brand-700">0</span> 筆對照記錄</p>
 
         <div class="space-y-2">
           <div class="text-xs font-medium text-ink-secondary">匯出</div>
@@ -1001,7 +1001,7 @@
         <div class="border-t border-line-soft pt-4 space-y-2">
           <div class="text-xs font-medium text-ink-secondary">匯入</div>
           <input type="file" id="vaultFileInput" accept=".csv,.json" class="hidden" onchange="handlePersistentVaultFileUpload(event)" />
-          <button onclick="document.getElementById('vaultFileInput').click()" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">選擇對應表檔案（.csv / .json）</button>
+          <button onclick="document.getElementById('vaultFileInput').click()" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">選擇對照表檔案（.csv / .json）</button>
         </div>
       </div>
       <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex justify-end flex-shrink-0">
@@ -1792,13 +1792,13 @@
       );
       if (!confirmed) return;
 
-      let csvContent = '﻿原始值,token,類型\n';
+      let csvContent = '﻿原始值,標籤,類型\n';
       keys.forEach(rawValue => {
         const { token, typeKey } = entries[rawValue];
         csvContent += `${vaultCsvEscape(rawValue)},${vaultCsvEscape(token)},${vaultCsvEscape(typeKey)}\n`;
       });
       downloadTextAsFile(csvContent, 'edushield-mapping-vault.csv', 'text/csv;charset=utf-8;');
-      showToast('已匯出未加密對應表（CSV）。', 'success');
+      showToast('已匯出未加密的標籤對照表（CSV）。', 'success');
     }
 
     function exportPersistentVaultEncryptedPrompt() {
@@ -1827,7 +1827,7 @@
         }, null, 2);
         downloadTextAsFile(fileContent, 'edushield-mapping-vault.json', 'application/json;charset=utf-8;');
         closeModal('vaultPasswordModal');
-        showToast('已匯出加密對應表（JSON）。', 'success');
+        showToast('已匯出加密的標籤對照表（JSON）。', 'success');
       } else {
         if (!pw1) { errorEl.textContent = '請輸入密碼。'; errorEl.classList.remove('hidden'); return; }
         try {
@@ -1871,7 +1871,7 @@
         } else {
           let fileObj;
           try { fileObj = JSON.parse(e.target.result); }
-          catch (err) { showToast('無法解析這個檔案，請確認是有效的 JSON 對應表檔案。', 'danger'); return; }
+          catch (err) { showToast('無法解析這個檔案，請確認是有效的 JSON 對照表檔案。', 'danger'); return; }
 
           if (fileObj.encrypted) {
             pendingVaultImportFile = fileObj;
@@ -1896,7 +1896,7 @@
       const existingCount = Object.keys(persistentVault.entries).length;
       const incomingCount = Object.keys(incomingVault.entries).length;
       document.getElementById('vaultImportModeMessage').innerText =
-        `偵測到目前已有 ${existingCount} 筆持久對應，本次匯入 ${incomingCount} 筆。請選擇如何處理：`;
+        `偵測到目前已有 ${existingCount} 筆對照記錄，本次匯入 ${incomingCount} 筆。請選擇如何處理：`;
       openModal('vaultImportModeModal');
     }
 
