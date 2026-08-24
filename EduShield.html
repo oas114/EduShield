@@ -279,6 +279,13 @@
       background-color: rgba(var(--danger-500-rgb), 0.45);
     }
 
+    /* 表格儲存格外框：inline-block + 緊縮行高，避免外框被 line-height 撐大、相鄰列外框緊貼 */
+    .pii-table-cell {
+      display: inline-block;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
     /* 捲動條美化 */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -533,10 +540,15 @@
       <!-- 左側：貼上原文 -->
       <section class="flex-1 bg-white rounded-xl border border-line shadow-sm flex flex-col min-h-[40vh] lg:min-h-0">
         <div class="p-3 border-b border-line-soft flex justify-between items-center bg-paper-sunken/50 flex-shrink-0">
-          <label class="font-semibold text-sm text-ink">原始文字</label>
-          <button onclick="document.getElementById('quickMaskInput').value = ''" class="text-xs text-ink-muted hover:text-ink transition-colors">清除內容</button>
+          <label class="font-semibold text-sm text-ink">原始文字（選取文字或表格儲存格可手動設為機密）</label>
+          <button onclick="clearQuickMaskInput()" class="text-xs text-ink-muted hover:text-ink transition-colors">清除內容</button>
         </div>
-        <textarea id="quickMaskInput" class="flex-1 w-full p-4 text-sm bg-white resize-none font-mono focus:outline-none min-h-[30vh]" style="tab-size: 4;" placeholder="貼上要公告/分享的文字，例如錄取名單、聯絡資訊清單...&#10;此模式不送外部 AI、不建立任何對照表，離開或重新整理就不留痕跡。"></textarea>
+        <div class="flex-1 relative bg-white min-h-[30vh] lg:min-h-0">
+          <div class="editor-container absolute inset-0 w-full h-full">
+            <div id="quickMaskBackdrop" class="editor-backdrop"></div>
+            <textarea id="quickMaskInput" class="editor-textarea" spellcheck="false" placeholder="貼上要公告/分享的文字，例如錄取名單、聯絡資訊清單...&#10;此模式不送外部 AI、不建立任何對照表，離開或重新整理就不留痕跡。"></textarea>
+          </div>
+        </div>
         <div class="p-4 border-t border-line-soft bg-paper-sunken flex-shrink-0">
           <button onclick="processQuickMask()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm">
             偵測
@@ -1128,9 +1140,11 @@
     let persistentVault = { entries: {}, typeCounters: {} }; // { entries: { [原始值]: {token, typeKey} }, typeCounters: { [typeKey]: 最大編號 } } — 使用者手動匯入/取代前恆為空，不受 processAnonymizePhase1() 的清空邏輯影響
     let reportData = [];
     let debounceTimer;
-    let activeExtractedEntities = []; 
+    let activeExtractedEntities = [];
     let tableMasks = new Set(); // Stores "lineIndex_colIndex"
     let rawAnonymizedText = ""; // 儲存已替換為 token 的文字供第二階段使用
+    let quickMaskActiveEntities = []; // 快速遮蔽輸入框自己的即時偵測結果，獨立於 activeExtractedEntities
+    let quickMaskTableMasks = new Set(); // 快速遮蔽輸入框自己的表格遮蔽座標，獨立於 tableMasks
 
     // ==========================================
     // 提示框與對照功能
@@ -2453,7 +2467,7 @@
             } else {
               cellHtml = renderRange(text, lineCursor, lineCursor + cellText.length);
             }
-            cellHtmls.push(`<span class="outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
+            cellHtmls.push(`<span class="pii-table-cell outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
             lineCursor += cellText.length + 1; // move past the tab
           });
           html += cellHtmls.join('\t') + '\n';
@@ -3219,7 +3233,7 @@
       let restoredLines = html.split('\n');
       html = restoredLines.map(line => {
         if (line.includes('\t')) {
-          return line.split('\t').map(cell => `<span class="outline outline-1 outline-dashed outline-line-strong rounded-sm hover:bg-paper-sunken transition-colors">${cell}</span>`).join('\t');
+          return line.split('\t').map(cell => `<span class="pii-table-cell outline outline-1 outline-dashed outline-line-strong rounded-sm hover:bg-paper-sunken transition-colors">${cell}</span>`).join('\t');
         }
         return line;
       }).join('\n');
@@ -3323,26 +3337,273 @@
     };
 
     // ==========================================
-    // 快速遮蔽（獨立操作模式：不經 AI、不建立對照表）
+    // 快速遮蔽：原文輸入框的選取設為機密／表格遮蔽
+    // （完整比照「去識別化」分頁 rawInput 的 renderHighlights/選單/handleSelectionAction/
+    //   handleTableMask 機制，獨立一份給快速遮蔽用，避免重構共用邏輯影響既有分頁）
+    // ==========================================
+    const quickMaskTextarea = document.getElementById('quickMaskInput');
+    const quickMaskBackdrop = document.getElementById('quickMaskBackdrop');
+    let quickMaskDebounceTimer;
+
+    function renderQuickMaskRange(text, start, end) {
+      const rangeEntities = quickMaskActiveEntities.filter(e => e.start < end && e.end > start);
+      if (rangeEntities.length === 0) return escapeHtml(text.substring(start, end));
+
+      let rangeHtml = '';
+      let cursor = start;
+      rangeEntities.forEach(ent => {
+        if (cursor < ent.start) {
+          rangeHtml += escapeHtml(text.substring(cursor, ent.start));
+          cursor = ent.start;
+        }
+        const overlapStart = Math.max(cursor, ent.start);
+        const overlapEnd = Math.min(end, ent.end);
+        if (overlapStart < overlapEnd) {
+          let markClass = '';
+          if (ent.isCritical) markClass = 'highlight-critical';
+          else if (ent.isAi) markClass = 'highlight-ai';
+          rangeHtml += `<mark class="${markClass}" data-entity-val="${escapeHtml(ent.value)}">${escapeHtml(text.substring(overlapStart, overlapEnd))}</mark>`;
+          cursor = overlapEnd;
+        }
+      });
+      if (cursor < end) rangeHtml += escapeHtml(text.substring(cursor, end));
+      return rangeHtml;
+    }
+
+    function renderQuickMaskHighlights() {
+      const text = quickMaskTextarea.value;
+      if (!text) { quickMaskBackdrop.innerHTML = ''; return; }
+
+      let html = '';
+      let globalCursor = 0;
+      const lines = text.split('\n');
+
+      lines.forEach((line, r) => {
+        if (line.includes('\t')) {
+          const cells = line.split('\t');
+          let cellHtmls = [];
+          let lineCursor = globalCursor;
+          cells.forEach((cellText, c) => {
+            const isMasked = quickMaskTableMasks.has(`${r}_${c}`);
+            let cellHtml = '';
+            if (isMasked) {
+              cellHtml = `<mark class="bg-brand-100/80 text-brand-800 rounded-sm py-0.5 pointer-events-auto" data-table-mask="${r}_${c}" data-entity-val="${escapeHtml(cellText)}">${escapeHtml(cellText)}</mark>`;
+            } else {
+              cellHtml = renderQuickMaskRange(text, lineCursor, lineCursor + cellText.length);
+            }
+            cellHtmls.push(`<span class="pii-table-cell outline outline-1 outline-dashed outline-line-strong pointer-events-none hover:bg-paper-sunken/50 transition-colors" data-cell="${r}_${c}">${cellHtml}</span>`);
+            lineCursor += cellText.length + 1;
+          });
+          html += cellHtmls.join('\t') + '\n';
+          globalCursor += line.length + 1;
+        } else {
+          html += renderQuickMaskRange(text, globalCursor, globalCursor + line.length) + '\n';
+          globalCursor += line.length + 1;
+        }
+      });
+      quickMaskBackdrop.innerHTML = html;
+    }
+
+    function triggerQuickMaskPreview() {
+      quickMaskActiveEntities = quickMaskTextarea.value ? extractStaticEntities(quickMaskTextarea.value) : [];
+      renderQuickMaskHighlights();
+    }
+
+    quickMaskTextarea.addEventListener('input', () => {
+      clearTimeout(quickMaskDebounceTimer);
+      quickMaskDebounceTimer = setTimeout(() => { triggerQuickMaskPreview(); }, 200);
+    });
+    quickMaskTextarea.addEventListener('scroll', () => {
+      quickMaskBackdrop.scrollTop = quickMaskTextarea.scrollTop;
+      quickMaskBackdrop.scrollLeft = quickMaskTextarea.scrollLeft;
+    });
+
+    function clearQuickMaskInput() {
+      quickMaskTextarea.value = '';
+      triggerQuickMaskPreview();
+    }
+
+    // 獨立的浮動選單（不共用去識別化分頁的 selectionBtn，避免「只認一個 textarea」互相干擾）
+    const quickMaskSelectionBtn = document.createElement('div');
+    quickMaskSelectionBtn.className = 'fixed z-50 bg-ink text-white text-xs rounded-md shadow-lg hidden pointer-events-auto overflow-hidden flex flex-col py-1';
+    document.body.appendChild(quickMaskSelectionBtn);
+
+    quickMaskTextarea.addEventListener('mouseup', (e) => {
+      setTimeout(() => {
+        const start = quickMaskTextarea.selectionStart;
+        const end = quickMaskTextarea.selectionEnd;
+        const text = quickMaskTextarea.value;
+        const selectedText = text.substring(start, end).trim();
+
+        let html = '';
+
+        let r = 0, c = 0, isTable = false, blockStart = 0, blockEnd = 0, cellCount = 0;
+        if (start === end) {
+          const lines = text.split('\n');
+          let currentLen = 0;
+          for (let i = 0; i < lines.length; i++) {
+            if (start <= currentLen + lines[i].length) {
+              r = i;
+              if (lines[i].includes('\t')) {
+                isTable = true;
+                const cells = lines[i].split('\t');
+                cellCount = cells.length;
+                let cellLen = currentLen;
+                for (let j = 0; j < cells.length; j++) {
+                  if (start <= cellLen + cells[j].length) { c = j; break; }
+                  cellLen += cells[j].length + 1;
+                }
+              }
+              break;
+            }
+            currentLen += lines[i].length + 1;
+          }
+          if (isTable) {
+            blockStart = r;
+            while (blockStart > 0 && lines[blockStart - 1].includes('\t')) blockStart--;
+            blockEnd = r;
+            while (blockEnd < lines.length - 1 && lines[blockEnd + 1].includes('\t')) blockEnd++;
+          }
+        }
+
+        if (selectedText.length > 1) {
+          const existingEnt = quickMaskActiveEntities.find(ent => ent.value === selectedText);
+          if (existingEnt) {
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('remove', '${escapeHtml(selectedText)}')">- 取消遮蔽【${existingEnt.reason}】"${escapeHtml(selectedText)}"</button>`;
+          } else {
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('add', '${escapeHtml(selectedText)}')">+ 將 "${escapeHtml(selectedText)}" 設為機密</button>`;
+          }
+        } else if (start === end) {
+          const ent = quickMaskActiveEntities.find(ent => start > ent.start && start < ent.end);
+          if (ent) {
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('remove', '${escapeHtml(ent.value)}')">- 取消遮蔽【${ent.reason}】"${escapeHtml(ent.value)}"</button>`;
+          }
+          if (isTable) {
+             if (html) html += `<div class="h-px bg-ink-hover my-1 w-full"></div>`;
+             const isCellMasked = quickMaskTableMasks.has(`${r}_${c}`);
+             if (isCellMasked) {
+                html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full text-brand-300" onclick="handleQuickMaskTableMask('unmask_cell', ${r}, ${c})">[表格] 解除遮蔽此儲存格</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full text-brand-300" onclick="handleQuickMaskTableMask('unmask_col', ${blockStart}, ${blockEnd}, ${c})">[表格] 解除整欄遮蔽</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full text-brand-300" onclick="handleQuickMaskTableMask('unmask_row', ${r}, ${cellCount})">[表格] 解除整列遮蔽</button>`;
+             } else {
+                html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full text-warning-300" onclick="handleQuickMaskTableMask('mask_cell', ${r}, ${c})">[表格] 遮蔽此儲存格</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full text-warning-300" onclick="handleQuickMaskTableMask('mask_col', ${blockStart}, ${blockEnd}, ${c})">[表格] 遮蔽整欄 (共 ${blockEnd - blockStart + 1} 列)</button>`;
+                html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full text-warning-300" onclick="handleQuickMaskTableMask('mask_row', ${r}, ${cellCount})">[表格] 遮蔽整列 (共 ${cellCount} 欄)</button>`;
+             }
+          }
+        }
+
+        if (html) {
+          quickMaskSelectionBtn.innerHTML = html;
+          quickMaskSelectionBtn.classList.remove('hidden');
+          const menuW = quickMaskSelectionBtn.offsetWidth || 180;
+          const menuH = quickMaskSelectionBtn.offsetHeight || 120;
+          const safeX = Math.min(e.clientX, window.innerWidth - menuW - 10);
+          const safeY = Math.min(e.clientY + 15, window.innerHeight - menuH - 10);
+          quickMaskSelectionBtn.style.left = safeX + 'px';
+          quickMaskSelectionBtn.style.top = safeY + 'px';
+        } else {
+          quickMaskSelectionBtn.classList.add('hidden');
+        }
+      }, 10);
+    });
+
+    quickMaskTextarea.addEventListener('scroll', () => quickMaskSelectionBtn.classList.add('hidden'));
+    document.addEventListener('mousedown', (e) => {
+      if (!quickMaskSelectionBtn.contains(e.target) && e.target !== quickMaskTextarea) quickMaskSelectionBtn.classList.add('hidden');
+    });
+
+    function handleQuickMaskSelectionAction(action, val) {
+      if (val) {
+        if (action === "add") {
+          whitelist.delete(val);
+          customDict.push({ type: 'CUSTOM', value: val, reason: "手動選取加入", source: 'manual' });
+        } else if (action === "remove") {
+          whitelist.add(val);
+        }
+        triggerQuickMaskPreview();
+      }
+      quickMaskSelectionBtn.classList.add('hidden');
+      quickMaskTextarea.setSelectionRange(0, 0);
+    }
+
+    function handleQuickMaskTableMask(action, p1, p2, p3) {
+      if (action === 'mask_cell') {
+        quickMaskTableMasks.add(`${p1}_${p2}`);
+      } else if (action === 'unmask_cell') {
+        quickMaskTableMasks.delete(`${p1}_${p2}`);
+      } else if (action === 'mask_col') {
+        for(let i=p1; i<=p2; i++) quickMaskTableMasks.add(`${i}_${p3}`);
+      } else if (action === 'unmask_col') {
+        for(let i=p1; i<=p2; i++) quickMaskTableMasks.delete(`${i}_${p3}`);
+      } else if (action === 'mask_row') {
+        for(let j=0; j<p2; j++) quickMaskTableMasks.add(`${p1}_${j}`);
+      } else if (action === 'unmask_row') {
+        for(let j=0; j<p2; j++) quickMaskTableMasks.delete(`${p1}_${j}`);
+      }
+      triggerQuickMaskPreview();
+      quickMaskSelectionBtn.classList.add('hidden');
+      quickMaskTextarea.setSelectionRange(0, 0);
+    }
+
+    // ==========================================
+    // 快速遮蔽：偵測結果（不經 AI、不建立對照表）
     // ==========================================
     function processQuickMask() {
-      const text = document.getElementById("quickMaskInput").value;
+      const text = quickMaskTextarea.value;
       const output = document.getElementById("quickMaskOutput");
       if (!text.trim()) {
         showToast("請先貼上文字", 'warning');
         return;
       }
       const entities = extractStaticEntities(text);
+
+      function wrapQuickMaskEntityRange(rangeText, start, end) {
+        const rangeEntities = entities.filter(e => e.start < end && e.end > start);
+        if (rangeEntities.length === 0) return escapeHtml(rangeText.slice(start, end));
+        let rangeHtml = '';
+        let cursor = start;
+        rangeEntities.forEach(ent => {
+          if (cursor < ent.start) { rangeHtml += escapeHtml(rangeText.slice(cursor, ent.start)); cursor = ent.start; }
+          const overlapStart = Math.max(cursor, ent.start);
+          const overlapEnd = Math.min(end, ent.end);
+          if (overlapStart < overlapEnd) {
+            const raw = rangeText.slice(overlapStart, overlapEnd);
+            const escapedRaw = escapeHtml(raw);
+            rangeHtml += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${ent.type}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${escapedRaw}')">${escapedRaw}</span>`;
+            cursor = overlapEnd;
+          }
+        });
+        if (cursor < end) rangeHtml += escapeHtml(rangeText.slice(cursor, end));
+        return rangeHtml;
+      }
+
       let html = "";
-      let cursor = 0;
-      entities.forEach(ent => {
-        html += escapeHtml(text.slice(cursor, ent.start));
-        const raw = text.slice(ent.start, ent.end);
-        const escapedRaw = escapeHtml(raw);
-        html += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${ent.type}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${escapedRaw}')">${escapedRaw}</span>`;
-        cursor = ent.end;
+      let globalCursor = 0;
+      const lines = text.split('\n');
+      lines.forEach((line, r) => {
+        if (line.includes('\t')) {
+          const cells = line.split('\t');
+          let lineCursor = globalCursor;
+          const cellHtmls = cells.map((cellText, c) => {
+            const key = `${r}_${c}`;
+            let cellHtml;
+            if (quickMaskTableMasks.has(key)) {
+              const escapedCell = escapeHtml(cellText);
+              cellHtml = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="CUSTOM" data-raw="${escapedCell}" contenteditable="false" onclick="toggleMask(this, '${escapedCell}')">${escapedCell}</span>`;
+            } else {
+              cellHtml = wrapQuickMaskEntityRange(text, lineCursor, lineCursor + cellText.length);
+            }
+            lineCursor += cellText.length + 1;
+            return `<span class="pii-table-cell outline outline-1 outline-dashed outline-line-strong hover:bg-paper-sunken/50 transition-colors" data-cell="${key}">${cellHtml}</span>`;
+          });
+          html += cellHtmls.join('\t') + '\n';
+          globalCursor += line.length + 1;
+        } else {
+          html += wrapQuickMaskEntityRange(text, globalCursor, globalCursor + line.length) + '\n';
+          globalCursor += line.length + 1;
+        }
       });
-      html += escapeHtml(text.slice(cursor));
       output.innerHTML = html || '<span class="text-ink-faint italic text-xs">未偵測到個資項目</span>';
       clearQuickMaskSelection();
     }
