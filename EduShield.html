@@ -3292,7 +3292,10 @@
         setTimeout(() => { btn.innerText = orig; btn.classList.remove("bg-emerald-600"); }, 2000);
       });
     }
-    function clearLeftInput() {
+    async function clearLeftInput() {
+      if (!textarea.value.trim()) return;
+      const confirmed = await showConfirmModal('這會清除已貼上的文字與下方的結果，且無法復原。確定要繼續嗎？', { title: '清除內容', okLabel: '清除', danger: true });
+      if (!confirmed) return;
       textarea.value = "";
       document.getElementById("anonymizedOutput").value = "";
       rawAnonymizedText = "";
@@ -3434,7 +3437,10 @@
       quickMaskBackdrop.scrollLeft = quickMaskTextarea.scrollLeft;
     });
 
-    function clearQuickMaskInput() {
+    async function clearQuickMaskInput() {
+      if (!quickMaskTextarea.value.trim()) return;
+      const confirmed = await showConfirmModal('這會清除已貼上的文字與下方的偵測結果，且無法復原。確定要繼續嗎？', { title: '清除內容', okLabel: '清除', danger: true });
+      if (!confirmed) return;
       quickMaskTextarea.value = '';
       triggerQuickMaskPreview();
     }
