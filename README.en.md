@@ -41,12 +41,12 @@ EduShield features a fully responsive layout tailored for mobile devices. Users 
 |----------|--------|
 | **Data Persistence** | Zero. All data is destroyed on page close or refresh. No disk writes, no cloud uploads. |
 | **Credentials** | None required. No API keys, no accounts. |
-| **Network** | Fully optional. Works completely offline. Local AI (Ollama) connects only to `http://localhost:11434` (loopback). |
+| **Network** | Fully optional, works completely offline (local AI/Ollama connects only to `http://localhost:11434`, loopback). If the device does have internet access, the page will try to load its stylesheet (Tailwind CSS, no user data involved) from a CDN on open, falling back to a local `style.css` if that fails — see Deployment Modes below. |
 | **Startup Safety** | All input fields are cleared on load to prevent browser autofill from leaking previous session data. |
 
 ### How Do I Know This Is Actually Safe? Ask an AI.
 
-You don't need to read code, and you shouldn't just take our word for it. EduShield is a single HTML file with no background network calls and no dependencies to install — copy the entire source of `EduShield.html` and paste it into any AI you already use (ChatGPT, Claude, etc.), then ask it directly: "Does this page send any user input to a server?" Let the AI verify it for you, rather than trusting the developer's claims alone. The in-app "Education Privacy Protection Guide" carries the same reminder.
+You don't need to read code, and you shouldn't just take our word for it. EduShield is a single HTML file with no dependencies to install; other than loading its stylesheet on first open (Tailwind CSS, tried from a CDN with a local fallback, never involving anything you type in), it makes no background network calls related to your document content — copy the entire source of `EduShield.html` and paste it into any AI you already use (ChatGPT, Claude, etc.), then ask it directly: "Does this page send any user input to a server?" Let the AI verify it for you, rather than trusting the developer's claims alone. The in-app "Education Privacy Protection Guide" carries the same reminder.
 
 ### Hybrid Defense Engine
 
