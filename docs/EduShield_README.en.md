@@ -178,7 +178,7 @@ Token naming rules:
 - **No masking records**: If the user clicks Restore without first running de-identification, a warning dialog prompts them to do so.
 - **Missing items**: Red "⚠ 遺漏 N 項，請查看左側紀錄". Missing tokens are highlighted in **red** in two locations simultaneously:
   - The corresponding chip in `#readOnlyOriginal` (original text + masking log area) on the left
-  - The corresponding chip in `#restoreChips` (masked item chip list) at the bottom left
+  - The corresponding chip in `#restoreChips` (masked item chip list) at the bottom left, which is also **clickable** (`openMissingTokenFixModal()`): clicking it opens a small dialog where the user pastes the actual text that appears in that spot in the AI reply; applying it does one precise string replacement on `#restoredOutputView` (`applyMissingTokenFix()`, following the same exact-match approach already used elsewhere), the chip returns to its normal style, and the missing count drops. This doesn't redesign the matching algorithm — it just closes the gap of "the user already found it, but had nowhere to apply it."
 
 #### Three-Way Cross-Reference (`highlightCrossReference()`)
 
@@ -332,7 +332,7 @@ If Ollama is configured, the **"透過地端 AI 深度掃描"** (Local AI Deep S
 | Some terms not masked after de-identification | The term is in the whitelist (`whitelist` Set) or does not match any rule | Select the text manually and click "設為機密" |
 | AI scan button unresponsive | Ollama not running or CORS not configured | Go to "系統設定" (System Settings) and run "測試連線" (Test Connection) — check for the green "連線成功！" message |
 | "Abnormal output length" error during AI scan | Model hallucination — generating endless meaningless characters | The system has already auto-terminated. Try switching to a different model or modifying the input |
-| Restore result shows "遺漏 N 項" (N missing) | External AI modified or deleted token tags | Match against the red chips in "原始資料與遮蔽紀錄" (left panel) and manually fill in the missing values in the restore area |
+| Restore result shows "遺漏 N 項" (N missing) | External AI modified or deleted token tags | Click the red chip in the left-side record and paste the actual text from the AI reply to apply a fix |
 | Copy button grayed out / disabled | Hard Block triggered (extremely sensitive terms detected) | Click the red banner "查看詳情與解鎖" (View Details & Unlock), verify, and force-unlock; or remove the sensitive terms from the input |
 | Table grid misaligned after pasting | Browser font rendering differences or non-monospace font | Use Chrome / Edge; the highlight editor uses `font-family: monospace` and `tab-size: 4` |
 

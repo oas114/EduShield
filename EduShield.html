@@ -1158,6 +1158,8 @@
     let rawAnonymizedText = ""; // 儲存已替換為 token 的文字供第二階段使用
     let quickMaskActiveEntities = []; // 快速遮蔽輸入框自己的即時偵測結果，獨立於 activeExtractedEntities
     let quickMaskTableMasks = new Set(); // 快速遮蔽輸入框自己的表格遮蔽座標，獨立於 tableMasks
+    let restoreMissingTokens = []; // 目前還原結果中比對不到的 token，供「修復缺漏標籤」功能讀取/更新
+    let missingTokenFixTarget = null; // 目前開啟「修復缺漏標籤」小視窗鎖定的 token
 
     // ==========================================
     // 提示框與對照功能
@@ -3351,13 +3353,61 @@
       container.innerHTML = Object.entries(sessionVault).map(([token, raw]) => {
         const isMissing = missingTokens.includes(token);
         const cls = isMissing
-          ? 'bg-danger-100 text-danger-800 border border-danger-300'
-          : 'bg-paper-hover text-ink-hover border border-line';
+          ? 'bg-danger-100 text-danger-800 border border-danger-300 cursor-pointer hover:bg-danger-200'
+          : 'bg-paper-hover text-ink-hover border border-line cursor-default';
+        const jsEscapedToken = escapeHtml(escapeForInlineJs(token));
+        const fixClick = isMissing ? ` onclick="openMissingTokenFixModal('${jsEscapedToken}')"` : '';
+        const fixTitle = isMissing ? '（點擊手動修復）' : '';
         return `
-          <div class="inline-block ${cls} px-2 py-1 rounded text-xs cursor-default transition-all" data-token="${token}" onmouseenter="showGlobalTooltip(event, '標籤: ${token}'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token}')">
+          <div class="inline-block ${cls} px-2 py-1 rounded text-xs transition-all" data-token="${token}"${fixClick} onmouseenter="showGlobalTooltip(event, '標籤: ${token}${fixTitle}'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token}${fixTitle}')">
             ${escapeHtml(raw)}
           </div>`;
       }).join('');
+    }
+
+    function updateIntegrityStatus() {
+      const stat = document.getElementById("integrityStatus");
+      if (restoreMissingTokens.length > 0) stat.innerHTML = `<span class="text-danger-500">⚠ 遺漏 ${restoreMissingTokens.length} 項，請查看左側紀錄</span>`;
+      else stat.innerHTML = `<span class="text-emerald-500">✓ 全數還原成功</span>`;
+    }
+
+    // 「缺漏標籤」手動修復：使用者已經自己在 AI 回覆裡找到實際文字，貼上後對還原結果做一次精確字串替換。
+    // 不重新設計比對演算法，只補這個「已經找到但沒地方套用」的缺口。
+    function openMissingTokenFixModal(token) {
+      missingTokenFixTarget = token;
+      document.getElementById('missingTokenFixLabel').textContent = token;
+      const input = document.getElementById('missingTokenFixInput');
+      input.value = '';
+      openModal('missingTokenFixModal');
+      setTimeout(() => input.focus(), 50);
+    }
+    function closeMissingTokenFixModal() {
+      closeModal('missingTokenFixModal');
+      missingTokenFixTarget = null;
+    }
+    function applyMissingTokenFix() {
+      const token = missingTokenFixTarget;
+      const input = document.getElementById('missingTokenFixInput').value;
+      if (!token || !input.trim()) { showToast('請先貼上文字', 'warning'); return; }
+
+      const rawVal = sessionVault[token];
+      const jsEscapedRawVal = escapeHtml(escapeForInlineJs(rawVal));
+      const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRawVal}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
+
+      const outputEl = document.getElementById('restoredOutputView');
+      const escapedInput = escapeHtml(input);
+      if (!outputEl.innerHTML.includes(escapedInput)) {
+        showToast('在還原結果中找不到這段文字，請確認貼上的內容跟 AI 回覆裡出現的完全一致', 'warning');
+        return;
+      }
+      outputEl.innerHTML = outputEl.innerHTML.replace(escapedInput, span);
+
+      restoreMissingTokens = restoreMissingTokens.filter(t => t !== token);
+      renderOriginalWithCapsules(restoreMissingTokens);
+      renderRestoreChips(restoreMissingTokens);
+      updateIntegrityStatus();
+      closeMissingTokenFixModal();
+      showToast('已套用修復', 'success');
     }
 
     function processRestore() {
@@ -3403,11 +3453,9 @@
       }).join('\n');
 
       document.getElementById("restoredOutputView").innerHTML = html;
-      
-      const stat = document.getElementById("integrityStatus");
-      if (missing.length > 0) stat.innerHTML = `<span class="text-danger-500">⚠ 遺漏 ${missing.length} 項，請查看左側紀錄</span>`;
-      else stat.innerHTML = `<span class="text-emerald-500">✓ 全數還原成功</span>`;
 
+      restoreMissingTokens = missing;
+      updateIntegrityStatus();
       renderOriginalWithCapsules(missing);
       renderRestoreChips(missing);
       clearRestoreSelection();
@@ -3424,7 +3472,9 @@
       document.getElementById("restoredOutputView").innerHTML = "";
       document.getElementById("integrityStatus").innerHTML = "";
       document.getElementById("aiReplyInput").style.height = "160px";
+      restoreMissingTokens = [];
       renderOriginalWithCapsules([]);
+      renderRestoreChips([]);
       clearRestoreSelection();
     }
 
@@ -3960,6 +4010,24 @@
       <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex justify-end gap-3 flex-shrink-0">
         <button id="genericConfirmCancelBtn" onclick="_resolveGenericConfirm(false)" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">取消</button>
         <button id="genericConfirmOkBtn" onclick="_resolveGenericConfirm(true)" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 修復缺漏標籤 Modal ==================== -->
+  <div id="missingTokenFixModal" class="hidden fixed inset-0 bg-scrim/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full border border-line">
+      <div class="px-6 py-4 border-b border-line-soft flex justify-between items-center bg-paper-sunken flex-shrink-0">
+        <h2 class="text-sm font-bold text-ink">修復缺漏標籤</h2>
+        <button onclick="closeMissingTokenFixModal()" class="text-ink-faint hover:text-ink-hover font-medium text-lg">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-3">
+        <p class="text-sm text-ink-hover">系統在 AI 回覆中找不到「<span id="missingTokenFixLabel" class="font-semibold text-ink"></span>」這個標籤。請貼上 AI 回覆裡實際出現在該位置的文字，系統會用它完成還原。</p>
+        <input type="text" id="missingTokenFixInput" placeholder="貼上 AI 回覆裡的實際文字…" onkeydown="if(event.key==='Enter'){applyMissingTokenFix();}" class="w-full text-sm p-2 border border-line-strong rounded focus:outline-none focus:border-brand-500">
+      </div>
+      <div class="px-6 py-4 border-t border-line-soft bg-paper-sunken flex justify-end gap-3 flex-shrink-0">
+        <button onclick="closeMissingTokenFixModal()" class="px-4 py-2 bg-white border border-line-strong text-ink-hover rounded-lg text-sm font-medium hover:bg-paper-sunken transition-colors">取消</button>
+        <button onclick="applyMissingTokenFix()" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">套用</button>
       </div>
     </div>
   </div>
