@@ -2730,7 +2730,7 @@
         
         el.className = `${bgClass} px-2 py-0.5 rounded text-xs border flex items-center transition-all cursor-default flex-shrink-0`;
         el.setAttribute('data-entity-chip', val);
-        el.innerHTML = `${val} <button onclick="addToWhitelist('${val}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
+        el.innerHTML = `${escapeHtml(val)} <button onclick="addToWhitelist('${escapeHtml(val)}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
         
         el.onmouseenter = (e) => {
           el.classList.replace(bgClass.split(' ')[0], hoverClass);
@@ -2760,7 +2760,7 @@
               const el = document.createElement('span');
               el.className = 'bg-accent-ai-50 text-accent-ai-700 border-accent-ai-200 px-2 py-0.5 rounded text-xs border flex items-center transition-all cursor-default flex-shrink-0';
               el.setAttribute('data-table-chip', maskKey);
-              el.innerHTML = `${cellText} <span class="ml-1 text-accent-ai-400 text-[10px]">表格</span>`;
+              el.innerHTML = `${escapeHtml(cellText)} <span class="ml-1 text-accent-ai-400 text-[10px]">表格</span>`;
               el.onmouseenter = (e) => {
                 el.classList.add('bg-accent-ai-100');
                 // 高亮 backdrop 中對應的表格 mark
