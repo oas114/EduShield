@@ -1286,6 +1286,51 @@
       return { pattern: (raw || '').trim(), flags: 'g' };
     }
 
+    // 偵測「群組內含不設上限量詞，且該群組本身又被不設上限量詞包住」的巢狀結構，
+    // 如 (a+)+、(a*)*、(\d+){2,}，這是最典型的災難性回溯（ReDoS）成因。
+    // {3}、{2,5} 這類有上限的量詞狀態空間有限，不會造成指數級回溯，刻意不視為風險。
+    // 這是簡化過的靜態結構偵測（非完整正則 AST 分析），無法涵蓋所有 ReDoS 變形
+    // （例如重疊字元類別交替 (a|aa)+），只針對這個最常見、最容易讓分頁卡死的形狀把關。
+    function hasCatastrophicQuantifierNesting(pattern) {
+      const src = String(pattern);
+      const stack = [];
+      let inClass = false;
+      let risky = false;
+
+      function readUnboundedQuantifier(i) {
+        const ch = src[i];
+        if (ch === '*' || ch === '+') return { unbounded: true };
+        if (ch === '{') {
+          const close = src.indexOf('}', i);
+          if (close !== -1) {
+            const inside = src.slice(i + 1, close);
+            if (/^\d*,$/.test(inside)) return { unbounded: true }; // {n,} 無上限
+          }
+        }
+        return { unbounded: false };
+      }
+
+      for (let i = 0; i < src.length; i++) {
+        const ch = src[i];
+        if (ch === '\\') { i++; continue; }
+        if (inClass) { if (ch === ']') inClass = false; continue; }
+        if (ch === '[') { inClass = true; continue; }
+        if (ch === '(') { stack.push(false); continue; }
+        if (ch === ')') {
+          const innerUnbounded = stack.pop();
+          const q = readUnboundedQuantifier(i + 1);
+          if (innerUnbounded && q.unbounded) risky = true;
+          if (stack.length > 0 && (innerUnbounded || q.unbounded)) stack[stack.length - 1] = true;
+          continue;
+        }
+        if (ch === '*' || ch === '+' || ch === '{') {
+          const q = readUnboundedQuantifier(i);
+          if (q.unbounded && stack.length > 0) stack[stack.length - 1] = true;
+        }
+      }
+      return risky;
+    }
+
     function tryCompileRegexRow(row, idx) {
       try {
         // 若呼叫端已經分開提供 pattern/flags（例如匯入設定檔的 JSON 格式），優先採用；
@@ -1299,6 +1344,9 @@
         }
         const finalFlags = flags.includes('g') ? flags : flags + 'g';
         new RegExp(pattern, finalFlags); // 僅用於驗證，丟例外代表 pattern 不合法
+        if (hasCatastrophicQuantifierNesting(pattern)) {
+          throw new Error('偵測到可能造成瀏覽器卡死的巢狀量詞寫法（如 (a+)+），已拒絕匯入。請避免群組內外同時使用不設上限的量詞（*／+／{n,}）。');
+        }
         return {
           ok: true,
           entry: {

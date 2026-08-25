@@ -219,7 +219,7 @@ Importing a CSV via "Manage Custom Protection Rules" (applies to Hard Block Keyw
 - **Replace All**: wipe every existing entry in that dimension (including built-ins) and use only the imported file's content.
 - **Cancel**: no changes.
 
-Any row that fails `new RegExp()` validation during a regex import is listed separately and skipped, without blocking the rest of the batch from importing.
+During a regex import, `tryCompileRegexRow()` runs two checks: (1) can the pattern compile via `new RegExp()`; (2) a static structural scan for nested unbounded quantifiers (e.g. `(a+)+`), the most common cause of catastrophic backtracking (ReDoS), which paired with long input text can freeze the tab. Any row that fails either check is listed separately and skipped, without blocking the rest of the batch from importing. This is a simplified static check aimed at the most common nested-quantifier shape, not a full regex AST analysis.
 
 #### Manual Config File Import
 
