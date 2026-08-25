@@ -807,8 +807,7 @@
           <p>不需要手動修改 HTML 原始碼，請透過工具列的「管理自訂防護規則」介面操作：</p>
           <ol class="list-decimal list-inside space-y-1 ml-1 text-ink-secondary">
             <li>點擊工具列的<strong>「管理自訂防護規則」</strong>，切換到「硬阻斷關鍵字」或「正則規則」分頁。</li>
-            <li>下載該分頁的 CSV 範本，依格式填入您的詞彙或正規表示式後存檔。</li>
-            <li>點「匯入 CSV」選擇該檔案，依需求選擇「新增並合併」或「完全取代」。</li>
+            <li>點「+ 手動新增一列」直接在表格新增，或點擊既有列的欄位直接修改；正則規則儲存時會自動檢查格式與 ReDoS 風險。若有大量規則要一次匯入，也可以用 CSV（下載範本→依格式填寫→匯入，可選擇「新增並合併」或「完全取代」）。</li>
             <li>若想把自訂規則分享給同事，或在其他電腦重複使用，可在同一個管理介面展開「進階設定」（僅桌面版顯示）點「轉存為設定檔」，下載 <code class="bg-white border border-line px-1 rounded">edushield.config.js</code>；之後要套用時，點「匯入設定檔」選取該檔案並確認摘要即可。<strong>注意：這是手動匯入，不會在重新整理或下次開啟時自動套用，每次都需要重新匯入一次。</strong></li>
             <li>若想捨棄手動修改或已匯入的內容、回復成內建預設值，在「管理自訂防護規則」展開「進階設定」點「重設為預設值」即可（僅桌面版顯示）。</li>
           </ol>
@@ -951,8 +950,9 @@
       <div class="p-6 overflow-y-auto flex-1 bg-white">
         <div id="pmPanelHardBlock" class="pm-panel space-y-3">
           <div class="flex flex-wrap justify-between items-center gap-2">
-            <p class="text-xs text-ink-muted">單欄純文字 CSV，每列一個關鍵字。</p>
+            <p class="text-xs text-ink-muted">可直接在下方表格新增/編輯列，或用單欄純文字 CSV（每列一個關鍵字）批次匯入。</p>
             <div class="flex gap-2">
+              <button onclick="addHardBlockRow()" class="text-xs bg-paper-hover hover:bg-line text-ink-hover px-3 py-1.5 rounded font-medium transition-colors border border-line">+ 手動新增一列</button>
               <input type="file" id="hardBlockCsvFileInput" accept=".csv" class="hidden" onchange="handleHardBlockCsvUpload(event)" />
               <button onclick="downloadHardBlockCsvTemplate()" class="text-xs bg-white border border-line-strong px-3 py-1.5 rounded hover:bg-paper-sunken">下載範本</button>
               <button onclick="document.getElementById('hardBlockCsvFileInput').click()" class="text-xs bg-white border border-line-strong px-3 py-1.5 rounded hover:bg-paper-sunken">匯入 CSV</button>
@@ -970,19 +970,21 @@
         </div>
         <div id="pmPanelRegex" class="pm-panel space-y-3 hidden">
           <div class="flex flex-wrap justify-between items-center gap-2">
-            <p class="text-xs text-ink-muted">4 欄 CSV：替換標籤,規則名稱,正規表示式,說明範例。正規表示式欄可用純 pattern 或 /pattern/flags 格式。</p>
+            <p class="text-xs text-ink-muted">可直接在下方表格新增/編輯列，或用 4 欄 CSV（替換標籤,規則名稱,正規表示式,說明範例）批次匯入。正規表示式欄可用純 pattern 或 /pattern/flags 格式，儲存時會自動驗證格式與 ReDoS 風險。</p>
             <div class="flex gap-2">
+              <button onclick="addRegexRow()" class="text-xs bg-paper-hover hover:bg-line text-ink-hover px-3 py-1.5 rounded font-medium transition-colors border border-line">+ 手動新增一列</button>
               <input type="file" id="regexCsvFileInput" accept=".csv" class="hidden" onchange="handleRegexCsvUpload(event)" />
               <button onclick="downloadRegexCsvTemplate()" class="text-xs bg-white border border-line-strong px-3 py-1.5 rounded hover:bg-paper-sunken">下載範本</button>
               <button onclick="document.getElementById('regexCsvFileInput').click()" class="text-xs bg-white border border-line-strong px-3 py-1.5 rounded hover:bg-paper-sunken">匯入 CSV</button>
             </div>
           </div>
           <div class="border border-line rounded-lg overflow-x-auto max-h-64 overflow-y-auto">
-            <table class="w-full text-left text-sm min-w-[600px]">
+            <table class="w-full text-left text-sm min-w-[760px]">
               <thead class="bg-paper-sunken sticky top-0"><tr>
                 <th class="px-3 py-2 font-medium text-ink-secondary border-b border-line">標籤</th>
                 <th class="px-3 py-2 font-medium text-ink-secondary border-b border-line">名稱</th>
                 <th class="px-3 py-2 font-medium text-ink-secondary border-b border-line">正規表示式</th>
+                <th class="px-3 py-2 font-medium text-ink-secondary border-b border-line">說明範例</th>
                 <th class="px-3 py-2 font-medium text-ink-secondary border-b border-line w-16 text-center">刪除</th>
               </tr></thead>
               <tbody id="regexMgmtTbody" class="divide-y divide-line bg-white"></tbody>
@@ -1388,7 +1390,8 @@
       return hardBlockKeywords.map(e => e.value);
     }
     function getRegexRuleList() {
-      return regexRules;
+      // 過濾掉正規表示式欄位還沒填的手動新增列（見 addRegexRow()），避免空 pattern 進入實際偵測。
+      return regexRules.filter(r => r.pattern);
     }
 
     const SOURCE_BADGE_LABELS = {
@@ -1696,38 +1699,107 @@
     function renderHardBlockMgmtTable() {
       const tbody = document.getElementById('hardBlockMgmtTbody');
       if (!tbody) return;
-      tbody.innerHTML = hardBlockKeywords.map(entry => `
+      tbody.innerHTML = hardBlockKeywords.map((entry, idx) => `
         <tr>
-          <td class="px-3 py-2">${escapeHtml(entry.value)}${sourceBadgeHtml(entry.source)}</td>
+          <td class="px-3 py-2">
+            <input type="text" value="${escapeHtml(entry.value)}" data-idx="${idx}" onchange="updateHardBlockValue(this)" placeholder="輸入關鍵字…" class="w-full text-sm bg-transparent border border-transparent hover:border-line-strong focus:border-brand-500 focus:outline-none rounded px-1.5 py-1">${sourceBadgeHtml(entry.source)}
+          </td>
           <td class="px-3 py-2 text-center">
-            <button onclick="deleteHardBlockEntry('${escapeHtml(escapeForInlineJs(entry.value))}')" class="text-danger-500 hover:text-danger-700 text-xs">刪除</button>
+            <button onclick="deleteHardBlockEntryAt(${idx})" class="text-danger-500 hover:text-danger-700 text-xs">刪除</button>
           </td>
         </tr>
-      `).join('') || `<tr><td colspan="2" class="px-3 py-4 text-center text-ink-faint text-xs">目前沒有硬阻斷關鍵字</td></tr>`;
+      `).join('') || `<tr><td colspan="2" class="px-3 py-4 text-center text-ink-faint text-xs">目前沒有硬阻斷關鍵字，可點擊上方「+ 手動新增一列」或匯入 CSV</td></tr>`;
     }
 
     function renderRegexMgmtTable() {
       const tbody = document.getElementById('regexMgmtTbody');
       if (!tbody) return;
-      tbody.innerHTML = regexRules.map(rule => `
+      tbody.innerHTML = regexRules.map((rule, idx) => `
         <tr>
-          <td class="px-3 py-2 font-mono text-xs">${escapeHtml(rule.type)}</td>
-          <td class="px-3 py-2">${escapeHtml(rule.name)}${sourceBadgeHtml(rule.source)}</td>
-          <td class="px-3 py-2 font-mono text-[10px] break-all">${escapeHtml(`/${rule.pattern}/${rule.flags}`)}</td>
+          <td class="px-3 py-2 font-mono text-xs">
+            <input type="text" value="${escapeHtml(rule.type)}" onchange="updateRegexField(${idx}, 'type', this.value)" placeholder="TYPE" class="w-full text-xs font-mono bg-transparent border border-transparent hover:border-line-strong focus:border-brand-500 focus:outline-none rounded px-1.5 py-1">
+          </td>
+          <td class="px-3 py-2">
+            <input type="text" value="${escapeHtml(rule.name)}" onchange="updateRegexField(${idx}, 'name', this.value)" placeholder="規則名稱" class="w-full text-sm bg-transparent border border-transparent hover:border-line-strong focus:border-brand-500 focus:outline-none rounded px-1.5 py-1">${sourceBadgeHtml(rule.source)}
+          </td>
+          <td class="px-3 py-2 font-mono text-[10px]">
+            <input type="text" value="${escapeHtml(rule.pattern ? `/${rule.pattern}/${rule.flags}` : '')}" onchange="updateRegexField(${idx}, 'pattern', this.value)" placeholder="/pattern/flags" class="w-full text-[10px] font-mono bg-transparent border border-transparent hover:border-line-strong focus:border-brand-500 focus:outline-none rounded px-1.5 py-1">
+          </td>
+          <td class="px-3 py-2 text-xs">
+            <input type="text" value="${escapeHtml(rule.example)}" onchange="updateRegexField(${idx}, 'example', this.value)" placeholder="範例" class="w-full text-xs bg-transparent border border-transparent hover:border-line-strong focus:border-brand-500 focus:outline-none rounded px-1.5 py-1">
+          </td>
           <td class="px-3 py-2 text-center">
-            <button onclick="deleteRegexEntry('${escapeHtml(escapeForInlineJs(rule.pattern))}')" class="text-danger-500 hover:text-danger-700 text-xs">刪除</button>
+            <button onclick="deleteRegexEntryAt(${idx})" class="text-danger-500 hover:text-danger-700 text-xs">刪除</button>
           </td>
         </tr>
-      `).join('') || `<tr><td colspan="4" class="px-3 py-4 text-center text-ink-faint text-xs">目前沒有正則規則</td></tr>`;
+      `).join('') || `<tr><td colspan="5" class="px-3 py-4 text-center text-ink-faint text-xs">目前沒有正則規則，可點擊上方「+ 手動新增一列」或匯入 CSV</td></tr>`;
     }
 
-    function deleteHardBlockEntry(value) {
-      hardBlockKeywords = hardBlockKeywords.filter(e => e.value !== value);
+    function addHardBlockRow() {
+      hardBlockKeywords.push({ value: '', source: 'manual' });
+      renderHardBlockMgmtTable();
+      const tbody = document.getElementById('hardBlockMgmtTbody');
+      const lastInput = tbody.querySelector('tr:last-child input');
+      if (lastInput) lastInput.focus();
+    }
+
+    function updateHardBlockValue(inputEl) {
+      const idx = Number(inputEl.dataset.idx);
+      const entry = hardBlockKeywords[idx];
+      if (!entry) return;
+      const newValue = inputEl.value.trim();
+      if (!newValue) {
+        if (!entry.value) { hardBlockKeywords.splice(idx, 1); renderHardBlockMgmtTable(); return; }
+        showToast('關鍵字不能留空。', 'warning');
+        inputEl.value = entry.value;
+        return;
+      }
+      hardBlockKeywords[idx] = { value: newValue, source: entry.source === 'builtin' ? 'overridden' : 'manual' };
       renderHardBlockMgmtTable();
       triggerPreview();
     }
-    function deleteRegexEntry(pattern) {
-      regexRules = regexRules.filter(r => r.pattern !== pattern);
+
+    function deleteHardBlockEntryAt(idx) {
+      hardBlockKeywords.splice(idx, 1);
+      renderHardBlockMgmtTable();
+      triggerPreview();
+    }
+
+    function addRegexRow() {
+      regexRules.push({ type: 'CUSTOM', pattern: '', flags: 'gi', name: '', example: '', source: 'manual' });
+      renderRegexMgmtTable();
+      const tbody = document.getElementById('regexMgmtTbody');
+      const lastInput = tbody.querySelector('tr:last-child input');
+      if (lastInput) lastInput.focus();
+    }
+
+    function updateRegexField(idx, field, rawValue) {
+      const rule = regexRules[idx];
+      if (!rule) return;
+      const value = rawValue.trim();
+      if (field === 'pattern') {
+        if (!value) { rule.pattern = ''; renderRegexMgmtTable(); return; } // 允許暫時留空，getRegexRuleList() 會過濾掉
+        const check = tryCompileRegexRow({ pattern: value, type: rule.type, name: rule.name, example: rule.example }, idx);
+        if (!check.ok) {
+          showToast('正則規則格式錯誤：' + check.error, 'danger');
+          renderRegexMgmtTable();
+          return;
+        }
+        regexRules[idx] = { ...check.entry, source: rule.source === 'builtin' ? 'overridden' : (rule.source || 'manual') };
+      } else if (field === 'type') {
+        if (!value) { showToast('標籤不能留空。', 'warning'); renderRegexMgmtTable(); return; }
+        rule.type = value;
+        rule.source = rule.source === 'builtin' ? 'overridden' : (rule.source || 'manual');
+      } else {
+        rule[field] = value;
+        rule.source = rule.source === 'builtin' ? 'overridden' : (rule.source || 'manual');
+      }
+      renderRegexMgmtTable();
+      triggerPreview();
+    }
+
+    function deleteRegexEntryAt(idx) {
+      regexRules.splice(idx, 1);
       renderRegexMgmtTable();
       triggerPreview();
     }
