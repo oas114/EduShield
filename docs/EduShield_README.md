@@ -111,7 +111,7 @@ AI 通道二（風險判定）也可能觸發此流程（若 AI 回傳 `critical
 - **連線端點**：`{ollamaUrl}/api/generate`（POST），預設 `http://localhost:11434`
 - **連線測試端點**：`{ollamaUrl}/api/tags`（GET），驗證 Ollama 啟動狀態與模型是否存在
 - **預設模型選項**：`qwen2.5:3b`（預設，建議優先使用）、`qwen2.5:1.5b`、`llama3.1`、自訂輸入
-- **傳輸格式**：`{ model, prompt, stream: true, format: "json" }`
+- **傳輸格式**：`{ model, prompt, stream: true, format, options }`——`format` 是完整 JSON Schema（不是寬鬆的 `"json"` 字串），強制扁平陣列＋`type` 五選一枚舉（`PERSON`／`VENDOR`／`ADDRESS`／`PROJECT`／`BANK_ACCT`），避免模型回傳依類型分組的物件、被既有容錯邏輯悄悄只留下第一類。通道一固定 `options: { temperature: 0, num_ctx: 8192 }` 求穩定抽取；通道二固定 `options: { num_ctx: 8192 }`（刻意不鎖 `temperature`，理由見下方通道二說明）。`num_ctx` 從 Ollama 預設的 2048 拉高，避免貼上文字較長時後段被靜默截斷。
 - **呼叫條件**：點擊「透過地端 AI 深度掃描」按鈕（Phase 1 完成後才顯示）
 
 | 通道 | 目的 | Prompt 摘要 | 回傳格式 |
@@ -121,8 +121,10 @@ AI 通道二（風險判定）也可能觸發此流程（若 AI 回傳 `critical
 
 > **已知準確度限制**：實測發現通道一對人名（`PERSON`）的擷取準確度不夠穩定，`qwen2.5:3b` 這類小模型對自由格式、高度依賴上下文的人名判讀常有漏抓。UI 端已因此把被動提示（`layer1HintBanner`）的建議從「執行深度掃描」改為「加入自訂詞庫」，人名不應被視為通道一的可靠輸出，僅供輔助參考。
 
-- **串流處理**：使用 `ReadableStream` + `TextDecoder` 逐行解析 NDJSON，即時更新按鈕文字顯示進度（例如：`AI 掃描 (1/2) - 已收 N 字`），並結合 `truncate` 防止文字溢出換行。
-- **JSON 容錯**：通道一支援 Array / Object 包裹 Array / 單筆物件等多種格式
+> **通道二連續呼叫 3 次、取聯集**：任一次回傳 `critical: true` 即視為風險（非多數決）。三次呼叫刻意維持模型預設 `temperature`（不套用通道一的 `temperature: 0`），否則三次會得到幾乎相同的結果、等於白跑；實測發現語意隱晦的委婉措辭（教師/社工描述敏感情況時常見的寫法）單次呼叫命中率僅約 20%，多次呼叫能提升累積捕捉率。若三次中有呼叫失敗（連線逾時等），會跳過該次繼續執行，只有三次全部失敗才顯示錯誤。
+
+- **串流處理**：使用 `ReadableStream` + `TextDecoder` 逐行解析 NDJSON。通道一即時更新按鈕文字顯示逐字元進度（例如：`掃描(1/2) 已收 N 字`）；通道二輸出小，逐字元進度意義不大，改為顯示第幾次呼叫（例如：`語意風險確認中 (第 2/3 次)`）。皆結合 `truncate` 防止文字溢出換行。
+- **JSON 容錯**：通道一仍保留 Array / Object 包裹 Array / 單筆物件等多種格式的容錯解析，作為 Schema 強制格式之外的安全網
 - **錯誤處理與防護**：
   - **前置連線檢查**：點擊 AI 掃描按鈕時，系統會優先檢查 Ollama 是否啟動，若未啟動將立刻跳出通知並停止，避免使用者空等。
   - **手動取消機制**：掃描期間按鈕會顯示「點擊取消」，使用者可隨時點擊該按鈕強制中止 AI 掃描。

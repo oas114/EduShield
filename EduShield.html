@@ -1249,6 +1249,34 @@
       channel2: `判斷以下文章是否包含「特敏資訊」。特敏資訊包含：自我傷害、自殺、性騷擾、性侵害、家庭暴力、保護管束、特殊教育需求(如自閉症、過動等症狀或心評報告)、心理諮商與治療紀錄。\n如果包含上述任何一種情境，請務必回傳 JSON 格式：{"critical": true, "reason": "說明具體的風險內容"}\n如果不包含，請回傳：{"critical": false, "reason": ""}\n\n文：\n{{TEXT}}`
     });
 
+    // 通道一：單次呼叫，temperature:0 求穩定抽取；JSON Schema 強制扁平陣列＋type 枚舉
+    // （取代原本鬆散的 format:"json"，避免模型回傳依類型分組的物件、被現有容錯邏輯只取第一類——詳見 todo #15）。
+    // 通道二：維持預設 temperature，讓 CHANNEL2_RUNS 次呼叫真的能產生差異；彙整方式是「任一次判定為風險就算風險」的聯集，不是多數決。
+    // num_ctx 從 Ollama 預設的 2048 拉高，避免貼上的文字較長時後段被靜默截斷。
+    const CHANNEL1_RESPONSE_SCHEMA = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["PERSON", "VENDOR", "ADDRESS", "PROJECT", "BANK_ACCT"] },
+          value: { type: "string" },
+          reason: { type: "string" }
+        },
+        required: ["type", "value"]
+      }
+    };
+    const CHANNEL1_OPTIONS = { temperature: 0, num_ctx: 8192 };
+    const CHANNEL2_RESPONSE_SCHEMA = {
+      type: "object",
+      properties: {
+        critical: { type: "boolean" },
+        reason: { type: "string" }
+      },
+      required: ["critical", "reason"]
+    };
+    const CHANNEL2_OPTIONS = { num_ctx: 8192 };
+    const CHANNEL2_RUNS = 3;
+
     // ==========================================
     // 自訂防護狀態：內建預設 → 即時運作狀態
     // ==========================================
@@ -3021,7 +3049,7 @@
           body: JSON.stringify({
             model: model,
             prompt: aiPrompts.channel1.split('{{TEXT}}').join(currentText),
-            stream: true, format: "json"
+            stream: true, format: CHANNEL1_RESPONSE_SCHEMA, options: CHANNEL1_OPTIONS
           })
         });
 
@@ -3113,72 +3141,88 @@
         renderOutputAndReport(newText);
         triggerPreview();
 
-        // 通道二：風險判定
-        if (btnText) btnText.textContent = 'AI 掃描 (2/2 啟動)';
-        
-        const res2 = await fetch(`${url}/api/generate`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model: model,
-            prompt: aiPrompts.channel2.split('{{TEXT}}').join(currentText),
-            stream: true, format: "json"
-          })
-        });
+        // 通道二：風險判定──循序跑 CHANNEL2_RUNS 次，任一次判定為風險就算風險（聯集）
+        const channel2ReasonSet = [];
+        let channel2FailCount = 0;
 
-        if (!res2.ok) {
-            const errText = await res2.text();
-            throw new Error(`通道二 API 錯誤 (${res2.status}): ${errText}`);
-        }
+        for (let run = 0; run < CHANNEL2_RUNS; run++) {
+          if (btnText) btnText.textContent = `語意風險確認中 (第 ${run + 1}/${CHANNEL2_RUNS} 次)`;
 
-        const reader2 = res2.body.getReader();
-        const decoder2 = new TextDecoder("utf-8");
-        let fullResponse2 = "";
-        let buffer2 = "";
+          try {
+            const res2 = await fetch(`${url}/api/generate`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              signal: controller.signal,
+              body: JSON.stringify({
+                model: model,
+                prompt: aiPrompts.channel2.split('{{TEXT}}').join(currentText),
+                stream: true, format: CHANNEL2_RESPONSE_SCHEMA, options: CHANNEL2_OPTIONS
+              })
+            });
 
-        while (true) {
-          const { done, value } = await reader2.read();
-          if (done) break;
-          buffer2 += decoder2.decode(value, { stream: true });
-          const lines = buffer2.split("\n");
-          buffer2 = lines.pop();
-          
-          for (let line of lines) {
-            if (line.trim()) {
-              try {
-                const parsedLine = JSON.parse(line);
-                if (parsedLine.response) {
-                    fullResponse2 += parsedLine.response;
-                    if (btnText) btnText.textContent = `掃描(2/2) 已收 ${fullResponse2.length} 字 (點擊取消)`;
-                    if (fullResponse2.length > maxAllowedLength) {
-                        throw new Error(`回傳字數異常 (${fullResponse2.length}字)，系統啟動保護機制強制中止。`);
+            if (!res2.ok) {
+                const errText = await res2.text();
+                throw new Error(`通道二 API 錯誤 (${res2.status}): ${errText}`);
+            }
+
+            const reader2 = res2.body.getReader();
+            const decoder2 = new TextDecoder("utf-8");
+            let fullResponse2 = "";
+            let buffer2 = "";
+
+            while (true) {
+              const { done, value } = await reader2.read();
+              if (done) break;
+              buffer2 += decoder2.decode(value, { stream: true });
+              const lines = buffer2.split("\n");
+              buffer2 = lines.pop();
+
+              for (let line of lines) {
+                if (line.trim()) {
+                  try {
+                    const parsedLine = JSON.parse(line);
+                    if (parsedLine.response) {
+                        fullResponse2 += parsedLine.response;
+                        if (fullResponse2.length > maxAllowedLength) {
+                            throw new Error(`回傳字數異常 (${fullResponse2.length}字)，系統啟動保護機制強制中止。`);
+                        }
                     }
+                  } catch(e) {
+                     if (e.message && e.message.includes("回傳字數異常")) throw e;
+                  }
                 }
-              } catch(e) {
-                 if (e.message && e.message.includes("回傳字數異常")) throw e;
               }
             }
+
+            if (buffer2.trim()) {
+              try {
+                 const parsedLine = JSON.parse(buffer2);
+                 if (parsedLine.response) fullResponse2 += parsedLine.response;
+              } catch(e) {}
+            }
+
+            try {
+                let parsed2 = JSON.parse(fullResponse2 || "{}");
+                if (Array.isArray(parsed2) && parsed2.length > 0) parsed2 = parsed2[0];
+
+                if (parsed2.critical === true || parsed2.critical === "true") {
+                    const reasonText = parsed2.reason || '發現特敏資訊風險';
+                    if (!channel2ReasonSet.includes(reasonText)) channel2ReasonSet.push(reasonText);
+                }
+            } catch (e) {
+                console.warn(`通道二第 ${run + 1} 次 JSON 解析失敗:`, fullResponse2);
+            }
+          } catch (err) {
+            if (err.name === 'AbortError') throw err;
+            channel2FailCount++;
+            console.warn(`通道二第 ${run + 1} 次呼叫失敗:`, err);
           }
         }
-        
-        if (buffer2.trim()) {
-          try {
-             const parsedLine = JSON.parse(buffer2);
-             if (parsedLine.response) fullResponse2 += parsedLine.response;
-          } catch(e) {}
+
+        if (channel2FailCount >= CHANNEL2_RUNS) {
+          throw new Error('通道二風險判定連續 3 次呼叫皆失敗。');
         }
 
-        let criticalReasons = [];
-        try {
-            let parsed2 = JSON.parse(fullResponse2 || "{}");
-            if (Array.isArray(parsed2) && parsed2.length > 0) parsed2 = parsed2[0];
-            
-            if (parsed2.critical === true || parsed2.critical === "true") {
-                criticalReasons.push(`AI 深度掃描判定：${parsed2.reason || '發現特敏資訊風險'}`);
-            }
-        } catch (e) {
-            console.warn("通道二 JSON 解析失敗:", fullResponse2);
-        }
+        const criticalReasons = channel2ReasonSet.map(reason => `AI 深度掃描判定：${reason}`);
 
         if (criticalReasons.length > 0) {
             triggerHardBlock(criticalReasons);

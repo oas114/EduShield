@@ -112,7 +112,7 @@ AI Channel 2 (risk assessment) can also trigger this flow if it returns `critica
 - **API Endpoint**: `{ollamaUrl}/api/generate` (POST), default: `http://localhost:11434`
 - **Connection Test Endpoint**: `{ollamaUrl}/api/tags` (GET) — verifies Ollama is running and the target model exists
 - **Default Model Options**: `qwen2.5:3b` (default, recommended), `qwen2.5:1.5b`, `llama3.1`, or custom input
-- **Payload Format**: `{ model, prompt, stream: true, format: "json" }`
+- **Payload Format**: `{ model, prompt, stream: true, format, options }` — `format` is a full JSON Schema (not the loose `"json"` string), forcing a flat array with a 5-value `type` enum (`PERSON`/`VENDOR`/`ADDRESS`/`PROJECT`/`BANK_ACCT`) so the model can't return a type-grouped object that gets silently reduced to one category by the existing fallback parser. Channel 1 fixes `options: { temperature: 0, num_ctx: 8192 }` for deterministic extraction; Channel 2 fixes `options: { num_ctx: 8192 }` (deliberately *not* pinning `temperature` — see the Channel 2 note below). `num_ctx` is raised from Ollama's 2048 default so longer pasted text doesn't get silently truncated.
 - **Trigger Condition**: Clicking the "透過地端 AI 深度掃描" (Local AI Deep Scan) button, which appears only after Phase 1 (de-identification) is complete
 
 | Channel | Purpose | Prompt Summary | Return Format |
@@ -122,8 +122,10 @@ AI Channel 2 (risk assessment) can also trigger this flow if it returns `critica
 
 > **Known accuracy limitation**: real-world testing shows Channel 1's `PERSON` extraction is not reliable — small models like `qwen2.5:3b` frequently miss names, since they're a free-form, highly context-dependent entity type. The UI's passive hint (`layer1HintBanner`) points users at the Custom Dictionary for names instead of the deep scan for this reason; treat Channel 1's `PERSON` output as best-effort, not authoritative.
 
-- **Streaming**: Uses `ReadableStream` + `TextDecoder` to parse NDJSON line-by-line, updating the button text in real time (e.g., `AI 掃描 (1/2) - 已收 N 字`) with `truncate` to prevent overflow.
-- **JSON Fault Tolerance**: Channel 1 supports Array / Object-wrapped Array / single Object response formats.
+> **Channel 2 runs 3 sequential calls and unions the results**: any single run returning `critical: true` marks the text as risky — this is a union, not a majority vote. The 3 runs deliberately keep the model's default `temperature` (not Channel 1's `temperature: 0`), otherwise all 3 runs would return nearly identical output and the repetition would be wasted. Real-text testing found that softly-worded, indirect phrasing (the kind teachers/social workers commonly use for sensitive topics) had only ~20% single-call hit rate; repeating the call raises the cumulative catch rate. If a run fails (timeout, connection drop), it's skipped and the remaining runs continue — an error is only shown if all 3 fail.
+
+- **Streaming**: Uses `ReadableStream` + `TextDecoder` to parse NDJSON line-by-line. Channel 1 updates the button text with a live character count (e.g., `掃描(1/2) 已收 N 字`); Channel 2's output is small enough that a character count isn't meaningful, so it instead shows the current attempt number (e.g., `Confirming semantic risk (2/3)`). Both use `truncate` to prevent overflow.
+- **JSON Fault Tolerance**: Channel 1 still keeps its Array / Object-wrapped Array / single Object fallback parser as a safety net on top of the schema-enforced format.
 - **Error Handling & Protection**:
   - **Pre-flight Connection Check**: Before scanning, the system verifies Ollama is running. If not, an alert is shown immediately and scanning is aborted.
   - **Manual Cancel**: During scanning, the button shows "點擊取消" (Click to Cancel) — the user can abort at any time.
