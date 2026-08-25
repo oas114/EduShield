@@ -573,9 +573,7 @@
         <div class="p-3 border-b border-line-soft bg-paper-sunken/50 flex-shrink-0">
           <label class="font-semibold text-sm text-ink">偵測結果（拖曳滑鼠可框選多筆，單點可循環切換單筆）</label>
         </div>
-        <div id="quickMaskOutput" contenteditable="true" class="relative flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0 focus:outline-none focus:ring-2 focus:ring-brand-100 transition-shadow" style="tab-size: 4;">
-          <span class="text-ink-faint italic text-xs">尚未偵測</span>
-        </div>
+        <div id="quickMaskOutput" contenteditable="true" class="relative flex-1 p-4 text-sm bg-white overflow-y-auto font-sans leading-[2.25] whitespace-pre-wrap min-h-0 focus:outline-none focus:ring-2 focus:ring-brand-100 transition-shadow" style="tab-size: 4;"><span class="text-ink-faint italic text-xs">尚未偵測</span></div>
         <div id="quickMaskBatchBar" class="hidden p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex flex-wrap items-center gap-2 text-xs">
           <span class="text-ink-muted">已選取 <span id="quickMaskSelectedCount">0</span> 項</span>
           <button onclick="applyBatchMaskState('2')" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-3 py-1.5 rounded-md transition-colors">半遮蔽已選取</button>
@@ -585,10 +583,13 @@
         </div>
         <p class="px-3 pt-2 text-xs text-ink-faint flex-shrink-0">提示：按住 Alt 拖曳可框選多筆項目批次遮蔽；一般拖曳仍可正常選取文字/編輯內容。</p>
         <div class="p-3 border-t border-line-soft bg-paper-sunken flex-shrink-0 flex gap-2">
+          <button onclick="clearQuickMaskResult()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-xs sm:text-sm whitespace-nowrap">
+            清除結果
+          </button>
           <button onclick="quickMaskSelectAll()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-xs sm:text-sm whitespace-nowrap">
             全選
           </button>
-          <button onclick="copyQuickMaskResult()" class="flex-[3] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+          <button onclick="copyQuickMaskResult()" class="flex-[2] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
             複製遮蔽後文字
           </button>
         </div>
@@ -3643,6 +3644,13 @@
       if (!confirmed) return;
       quickMaskTextarea.value = '';
       triggerQuickMaskPreview();
+      clearQuickMaskResult();
+    }
+
+    function clearQuickMaskResult() {
+      document.getElementById("quickMaskOutput").innerHTML = '<span class="text-ink-faint italic text-xs">尚未偵測</span>';
+      quickMaskTableMasks = new Set();
+      clearQuickMaskSelection();
     }
 
     // 獨立的浮動選單（不共用去識別化分頁的 selectionBtn，避免「只認一個 textarea」互相干擾）
