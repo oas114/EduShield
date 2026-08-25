@@ -3937,6 +3937,14 @@
       initRestoreDragSelect();
     });
 
+    // sessionVault 只存在記憶體，跟持久化對照表不同，意外關閉分頁/重新整理會無預警整批消失且無法復原
+    window.addEventListener('beforeunload', (e) => {
+      if (Object.keys(sessionVault).length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
   </script>
 
   <!-- ==================== 通用確認 Modal（由 JS 驅動） ==================== -->
