@@ -24,13 +24,16 @@ Whenever `EduShield_README.md` is updated, this file MUST be updated to match.
 ✨ **[Try the Interactive Manual](https://oasgrow.com/EduShield/#)** ✨  
 *We highly recommend exploring the interactive manual first to experience how EduShield works.*
 
+> [!IMPORTANT]
+> **Disclaimer**: This document and the EduShield tool itself provide only technical masking/restoration capability to reduce data-exposure risk when submitting content to AI; **neither constitutes legal advice, and using them alone does not guarantee compliance with Taiwan's Personal Data Protection Act or any other regulation**. Whether your data handling is compliant still depends on your (or your organization's) overall data collection, processing, and use practices — consult professional legal advice if in doubt.
+
 ---
 
 ## I. System Overview
 
 ### 1.1 Purpose
 
-**EduShield** is a de-identification and PII (Personally Identifiable Information) protection tool designed for the education sector. The core problem it solves: educators need to submit documents or spreadsheets containing student names, ID numbers, grades, and other personal data to external AI services (e.g., ChatGPT, Claude) for processing — but doing so risks violating personal data protection laws. EduShield provides a complete three-stage workflow: **Mask → Send to AI → Restore**.
+**EduShield** is a de-identification and PII (Personally Identifiable Information) protection tool designed for the education sector. The core problem it solves: educators need to submit documents or spreadsheets containing student names, ID numbers, grades, and other personal data to external AI services (e.g., ChatGPT, Claude) for processing — but doing so risks exposing that data. EduShield provides a complete three-stage workflow — **Mask → Send to AI → Restore** — to reduce that risk at a technical level (it does not by itself guarantee compliance with Taiwan's Personal Data Protection Act or any other regulation).
 
 ### 1.2 Architecture & Security Features
 

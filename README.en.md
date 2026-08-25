@@ -6,6 +6,8 @@
 
 > *"Mask sensitive data before sending to AI. Restore it back in one click. 100% in-browser — no data ever leaves your device."*
 
+> **Disclaimer**: This tool provides technical masking/restoration capability to reduce data-exposure risk; **it does not constitute legal advice, and using it alone does not guarantee compliance with Taiwan's Personal Data Protection Act or any other regulation**. Whether your data handling is compliant still depends on your (or your organization's) overall data collection, processing, and use practices.
+
 **Author:** OA (oas114) | **[Support this project (Ko-fi)](https://ko-fi.com/oasgrow)**
 
 ---
