@@ -1010,16 +1010,15 @@
       <div class="border-t border-line-soft bg-paper-sunken flex-shrink-0">
         <details class="hidden sm:block group">
           <summary class="px-6 py-3 text-xs font-semibold text-ink-secondary cursor-pointer hover:bg-paper-hover select-none flex items-center justify-between">
-            <span>進階設定：自動載入設定檔</span>
+            <span>進階設定：匯入／匯出設定檔</span>
             <span class="text-ink-faint transition-transform group-open:rotate-180">▾</span>
           </summary>
           <div class="px-6 pb-4 space-y-3">
-            <p id="autoConfigNetworkNotice" class="hidden text-xs text-warning-700 bg-warning-50 border border-warning-200 rounded p-2 leading-relaxed">
-              此功能僅在您將本頁面下載為本機 HTML 檔案並直接開啟時才會自動生效；您目前是透過網址瀏覽，「轉存為自動載入檔」仍可下載設定檔，但需另外下載本頁面並與設定檔放在同一資料夾，才會自動套用。
-            </p>
+            <input type="file" id="importConfigFileInput" accept=".js" class="hidden" onchange="handleImportConfigFile(this)">
             <div class="flex flex-wrap gap-2">
-              <button id="exportAutoConfigBtn" onclick="exportAutoConfig()" title="把目前記憶體中的自訂規則與提示詞打包成可自動載入的設定檔" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors">轉存為自動載入檔</button>
-              <button id="reloadConfigBtn" onclick="reloadConfig()" title="清除手動編輯，重新套用內建預設值與同資料夾的自動載入設定檔" class="bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover px-4 py-2 rounded-lg text-sm font-medium transition-colors">重新載入設定檔</button>
+              <button id="exportAutoConfigBtn" onclick="exportAutoConfig()" title="把目前記憶體中的自訂規則與提示詞打包成可分享的設定檔" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors">轉存為設定檔</button>
+              <button id="importConfigBtn" onclick="triggerImportConfig()" title="選取同事分享的設定檔（.js）並匯入" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors">匯入設定檔</button>
+              <button id="reloadConfigBtn" onclick="reloadConfig()" title="清除手動編輯與已匯入內容，重設為內建預設值" class="bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover px-4 py-2 rounded-lg text-sm font-medium transition-colors">重設為預設值</button>
             </div>
           </div>
         </details>
@@ -1368,42 +1367,101 @@
       return errors;
     }
 
-    function showAutoConfigErrorBanner(errors) {
-      console.warn(`[EduShield] 自動載入設定檔中有 ${errors.length} 筆正則規則格式錯誤，已略過該幾筆：`, errors);
+    // 從純文字中取出 window.EDUSHIELD_AUTO_CONFIG = {...} 的 JSON 內容。
+    // 全程只做字串掃描與 JSON.parse，絕不 eval／執行檔案內容，避免被竄改的檔案夾帶任意程式碼。
+    function extractAutoConfigJson(text) {
+      const marker = 'window.EDUSHIELD_AUTO_CONFIG';
+      const idx = text.indexOf(marker);
+      if (idx === -1) throw new Error('找不到 window.EDUSHIELD_AUTO_CONFIG 設定內容，請確認選取的是正確的設定檔');
+      const start = text.indexOf('{', idx);
+      if (start === -1) throw new Error('設定檔內容格式不正確');
+      let depth = 0, end = -1, inString = false, escaped = false;
+      for (let i = start; i < text.length; i++) {
+        const ch = text[i];
+        if (inString) {
+          if (escaped) escaped = false;
+          else if (ch === '\\') escaped = true;
+          else if (ch === '"') inString = false;
+          continue;
+        }
+        if (ch === '"') { inString = true; continue; }
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end === -1) throw new Error('設定檔內容格式不正確（大括號不成對）');
+      return JSON.parse(text.slice(start, end + 1));
     }
 
-    function loadAutoConfig(onDone) {
-      const s = document.createElement('script');
-      s.src = 'edushield.config.js';
-      s.onload = function () {
-        const cfg = window.EDUSHIELD_AUTO_CONFIG;
-        if (cfg && typeof cfg === 'object') {
-          const errors = applyAutoConfig(cfg);
-          if (errors.length) showAutoConfigErrorBanner(errors);
-        } else {
-          console.warn('[EduShield] edushield.config.js 已載入但未設定 window.EDUSHIELD_AUTO_CONFIG，可能內容有誤，僅套用內建預設值。');
-        }
-        if (onDone) onDone();
-      };
-      s.onerror = function () {
-        console.info('[EduShield] 同資料夾未找到 edushield.config.js，僅使用內建預設值。');
-        if (onDone) onDone();
-      };
-      document.head.appendChild(s);
+    function triggerImportConfig() {
+      document.getElementById('importConfigFileInput').click();
+    }
+
+    async function handleImportConfigFile(fileInput) {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if (!file) return;
+      let text;
+      try {
+        text = await file.text();
+      } catch (e) {
+        showToast('無法讀取檔案：' + e.message, 'danger');
+        return;
+      }
+      let cfg;
+      try {
+        cfg = extractAutoConfigJson(text);
+      } catch (e) {
+        showToast('設定檔解析失敗：' + e.message, 'danger');
+        return;
+      }
+      const rosterCount = Array.isArray(cfg.roster) ? cfg.roster.length : 0;
+      const hardBlockCount = Array.isArray(cfg.hardBlock) ? cfg.hardBlock.length : 0;
+      const regexCount = Array.isArray(cfg.regexRules) ? cfg.regexRules.length : 0;
+      const hasPrompts = !!(cfg.aiPrompts && typeof cfg.aiPrompts === 'object' && (cfg.aiPrompts.channel1 || cfg.aiPrompts.channel2));
+      const summary = `即將匯入：詞庫 ${rosterCount} 筆、硬阻斷關鍵字 ${hardBlockCount} 筆、自訂正則規則 ${regexCount} 筆${hasPrompts ? '，並包含自訂 AI 提示詞' : ''}。確定要套用嗎？`;
+      const ok = await showConfirmModal(summary, { title: '匯入設定檔', okLabel: '匯入並套用' });
+      if (!ok) return;
+      const errors = applyAutoConfig(cfg);
+      updateDictCountLabel();
+      renderHardBlockMgmtTable();
+      renderRegexMgmtTable();
+      renderAiPromptTextareas();
+      triggerPreview();
+      if (errors.length) {
+        showToast(`已匯入設定檔，但有 ${errors.length} 筆正則規則格式錯誤已略過套用。`, 'warning');
+      } else {
+        showToast('已匯入設定檔並套用。', 'success');
+      }
+      const notice = document.getElementById('configImportNotice');
+      if (notice) removeToast(notice);
+    }
+
+    // 頁面開啟時常駐一則不自動消失的提示，點擊可直接開啟檔案選取視窗匯入設定檔。
+    // 瀏覽器安全機制不允許背景偵測同資料夾檔案是否存在（fetch／XHR／沙盒 iframe 讀取本機檔案皆會被擋），
+    // 所以這裡無法只在真的有設定檔時才顯示，文字刻意不聲稱「已偵測到」。
+    function showConfigImportNotice() {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const el = document.createElement('div');
+      el.id = 'configImportNotice';
+      el.className = 'pointer-events-auto max-w-sm w-full bg-white border-brand-200 text-ink border rounded-lg shadow-lg px-4 py-3 text-sm flex items-start gap-2 transition-all duration-300 opacity-0 translate-y-2';
+      el.innerHTML = `<span class="flex-1 cursor-pointer underline decoration-dotted">可匯入設定檔（點擊選取檔案）</span><button class="text-ink-faint hover:text-ink-hover flex-shrink-0 font-medium" aria-label="關閉">&times;</button>`;
+      el.querySelector('span').onclick = () => { removeToast(el); triggerImportConfig(); };
+      el.querySelector('button').onclick = () => removeToast(el);
+      container.appendChild(el);
+      requestAnimationFrame(() => { el.classList.remove('opacity-0', 'translate-y-2'); });
     }
 
     async function reloadConfig() {
-      const ok = await showConfirmModal('重新載入將清除您目前手動編輯過的自訂規則與詞庫，並重新套用內建預設值與自動載入檔（如果存在）。確定要繼續嗎？', { danger: true, okLabel: '重新載入' });
+      const ok = await showConfirmModal('將清除您目前手動編輯過的自訂規則與詞庫，並重設為內建預設值。確定要繼續嗎？', { danger: true, okLabel: '重設' });
       if (!ok) return;
       initCustomProtectionState();
-      loadAutoConfig(() => {
-        updateDictCountLabel();
-        renderHardBlockMgmtTable();
-        renderRegexMgmtTable();
-        renderAiPromptTextareas();
-        triggerPreview();
-        showToast('已重新載入設定檔。', 'success');
-      });
+      updateDictCountLabel();
+      renderHardBlockMgmtTable();
+      renderRegexMgmtTable();
+      renderAiPromptTextareas();
+      triggerPreview();
+      showToast('已重設為內建預設值。', 'success');
     }
 
     // ==========================================
@@ -1551,7 +1609,7 @@
         regexRules: regexRules.map(r => ({ type: r.type, pattern: r.pattern, flags: r.flags, name: r.name, example: r.example })),
         aiPrompts: { channel1: aiPrompts.channel1, channel2: aiPrompts.channel2 }
       };
-      const content = `// EduShield 自動載入設定檔——請將此檔案與 EduShield.html 放在同一個資料夾，並保持檔名為 edushield.config.js\n` +
+      const content = `// EduShield 設定檔——請用「管理自訂防護規則」介面的「匯入設定檔」按鈕選取此檔案\n` +
         `window.EDUSHIELD_AUTO_CONFIG = ${JSON.stringify(cfg, null, 2)};\n`;
       downloadTextAsFile(content, 'edushield.config.js', 'text/javascript;charset=utf-8;');
     }
@@ -1645,6 +1703,7 @@
     function confirmImportMode(mode) {
       if (!pendingImport) { closeModal('importModeModal'); return; }
       const { dimension, rows } = pendingImport;
+      let importErrors = [];
 
       if (dimension === 'hardBlock') {
         const base = mode === 'replace' ? [] : hardBlockKeywords;
@@ -1655,7 +1714,7 @@
         const base = mode === 'replace' ? [] : regexRules;
         const { result, errors } = mergeRegexRules(base, rows, 'manual', 'overridden');
         regexRules = result;
-        if (errors.length) showAutoConfigErrorBanner(errors);
+        importErrors = errors;
         renderRegexMgmtTable();
       } else if (dimension === 'roster') {
         const base = mode === 'replace' ? [] : customDict;
@@ -1666,7 +1725,11 @@
       pendingImport = null;
       closeModal('importModeModal');
       triggerPreview();
-      showToast('匯入完成。', 'success');
+      if (importErrors.length) {
+        showToast(`匯入完成，但有 ${importErrors.length} 筆正則規則格式錯誤已略過。`, 'warning');
+      } else {
+        showToast('匯入完成。', 'success');
+      }
     }
 
     // ==========================================
@@ -1713,16 +1776,10 @@
     }
 
     initCustomProtectionState(); // 開機先套用內建預設值
-    // 再嘗試從同資料夾的 edushield.config.js 合併自訂設定（不存在則靜默略過）；
-    // 合併完務必刷新「詞庫: N」計數器，否則畫面會停留在 HTML 寫死的初始值 0，
-    // 之後點「重新載入設定檔」時看起來就像多跑出一筆一樣，其實是同一筆遲遲沒反映到畫面上。
-    loadAutoConfig(() => {
-      updateDictCountLabel();
-    });
-    if (location.protocol !== 'file:') {
-      const autoConfigNetworkNotice = document.getElementById('autoConfigNetworkNotice');
-      if (autoConfigNetworkNotice) autoConfigNetworkNotice.classList.remove('hidden');
-    }
+    // 設定檔改為使用者手動選取匯入（不再用 <script> 標籤自動執行同資料夾檔案，
+    // 避免被竄改的檔案在使用者毫無察覺下夾帶任意程式碼執行——詳見 handleImportConfigFile()）。
+    // 瀏覽器安全機制也不允許背景偵測檔案是否存在，因此改用常駐提示引導使用者手動匯入。
+    showConfigImportNotice();
 
     // ==========================================
     // UI 控制與頁籤切換
