@@ -8,6 +8,8 @@
 
 > **Disclaimer**: This tool provides technical masking/restoration capability to reduce data-exposure risk; **it does not constitute legal advice, and using it alone does not guarantee compliance with Taiwan's Personal Data Protection Act or any other regulation**. Whether your data handling is compliant still depends on your (or your organization's) overall data collection, processing, and use practices.
 
+> **Note**: The name "EduShield" is also used by a few unrelated products (an Arduino education shield, school-safety services abroad, classroom device-management tools, among others). This EduShield is a PII de-identification tool built for Taiwan's education sector and has no connection to any of them.
+
 **Author:** OA (oas114) | **[Support this project (Ko-fi)](https://ko-fi.com/oasgrow)**
 
 ---
