@@ -200,15 +200,17 @@ Click "**Manage Custom Protection Rules**" in the toolbar to customize, import, 
 3. **Regex Rules**: its own tab; CSV format is 4 columns (`替換標籤,規則名稱,正規表示式,說明範例`) — the pattern column accepts either a bare pattern (defaults to flag `g`) or a full `/pattern/flags` literal-style string
 4. **Local AI Prompts**: the "地端 AI 提示詞" tab exposes editable textareas for both channels, showing the currently effective prompt text with a one-click "Reset to Default"; the `{{TEXT}}` placeholder is substituted with the actual text to scan at call time
 
+Both the Hard Block Keywords and Regex Rules tabs support **adding/editing rows inline** ("+ Add Row" or clicking an existing row's fields directly); CSV import is kept for bulk changes. This includes **built-in default rules, not just custom ones** — `hardBlockKeywords`/`regexRules` were already a single shared array of built-in and custom entries, the UI simply didn't distinguish them before. Editing or deleting a built-in row adds a "Revert to Default" button on that row; a deleted built-in row shows up in a "removed from defaults" list below the table, re-addable with one click. All of this is working-copy state in memory — it resets to built-in defaults on reload unless preserved via config file export/import below.
+
 #### Data Model
 
 Built-in defaults are frozen as `HARD_BLOCK_KEYWORDS_DEFAULT` / `REGEX_RULES_DEFAULT` / `AI_PROMPTS_DEFAULT`. Three live working-state variables are what detection logic actually reads:
 ```javascript
-let hardBlockKeywords = []; // [{ value, source }]
-let regexRules = [];        // [{ type, pattern, flags, name, example, source }]
+let hardBlockKeywords = []; // [{ value, source, defaultValue? }]
+let regexRules = [];        // [{ type, pattern, flags, name, example, source, defaultPattern? }]
 let aiPrompts = { channel1: '', channel2: '' };
 ```
-The `source` field marks each rule's origin and is shown as a badge in both the management UI and the PII Rule Guide: `Built-in` / `Config file import` / `Manually imported` / `Overridden` (`customDict` also has an internal-only `ai-session` tag for the current document's transient AI-extracted results, excluded when exporting a config file).
+The `source` field marks each rule's origin and is shown as a badge in the management UI: `Built-in` / `Config file import` / `Manually imported` / `Overridden` (`customDict` also has an internal-only `ai-session` tag for the current document's transient AI-extracted results, excluded when exporting a config file). Built-in entries also carry `defaultValue`/`defaultPattern`, a stable link back to the corresponding entry in `HARD_BLOCK_KEYWORDS_DEFAULT`/`REGEX_RULES_DEFAULT` that survives any number of edits — this is what powers the per-row "Revert to Default" and "removed from defaults" re-add features (see the management UI; the PII Rule Guide no longer duplicates the rule listing, it's a concept explainer now).
 
 Regex rules no longer hold a real `RegExp` object directly — they're split into `pattern` (`regex.source`) and `flags` (`regex.flags`) strings, since a CSV/JSON config file can only carry strings. Every reconstruction of a `RegExp` goes through the `tryCompileRegexRow()` try/catch guard; a malformed rule is skipped and reported individually without aborting the rest of the scan.
 
@@ -227,8 +229,8 @@ During a regex import, `tryCompileRegexRow()` runs two checks: (1) can the patte
 > An earlier version auto-loaded `edushield.config.js` from the same folder on startup via `<script src="edushield.config.js">`. That approach let a tampered file execute arbitrary code without the user noticing, contradicting the "PII never leaves the browser" trust claim — it was replaced on 2026-08-25 with the manual import flow described below.
 
 A collapsible "Advanced Settings: Import / Export Config File" section at the bottom of the "Manage Custom Protection Rules" panel (hidden below desktop viewport widths) offers three buttons:
-- **Import Config File**: opens a file picker; once a file is selected, `extractAutoConfigJson()` does nothing but string-scanning and `JSON.parse()` (never `eval`, never executes file content), then shows a confirmation summary (counts of roster/hard-block/regex entries about to be imported) — nothing is applied until the user confirms (merged in, tagged `Config file import`).
-- **Export Config File**: packages the current in-memory state of all four dimensions (including every merge/override result) into the same config format for download, with the fixed filename `edushield.config.js` — share it with a colleague or reuse it on another machine.
+- **Import Config File**: opens a file picker; once a file is selected, `extractAutoConfigJson()` does nothing but string-scanning and `JSON.parse()` (never `eval`, never executes file content), then shows the same Merge/Replace choice dialog shared with CSV import (`openConfigImportDialog()`), listing the counts of roster/hard-block/regex entries about to be imported. **The Merge vs. Replace All distinction matters more here than it looks**: merge keys on the content itself — a regex's pattern text, or a hard-block keyword's own text — so if you edited exactly that field, merge can't recognize "this is the same rule, updated" and adds a duplicate instead of replacing it. Only "Replace All" wipes that dimension and applies the file's content directly, which is the only way to correctly reapply an edited or deleted built-in rule. The source tag ends up `Config file import` or `Overridden` depending on the mode.
+- **Export Config File**: packages the current in-memory state of all four dimensions (including every merge/override result — and any edits to built-in rules, since built-in and custom entries already share one array with no distinction on export) into the same config format for download, with the fixed filename `edushield.config.js` — share it with a colleague or reuse it on another machine.
 - **Reset to Defaults**: prompts for confirmation, then resets all four dimensions to their built-in defaults, discarding this session's manual edits or imported settings.
 
 > [!IMPORTANT]

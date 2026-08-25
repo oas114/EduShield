@@ -1426,18 +1426,26 @@
       return { result, errors };
     }
 
-    function applyAutoConfig(cfg) {
+    function applyAutoConfig(cfg, mode = 'merge') {
+      // mode 'replace' starts each dimension from an empty base before merging the imported rows in —
+      // this is the only way to cleanly reapply an edited/deleted builtin rule: since merge keys hard-block
+      // keywords and regex rules by their own content (the value/pattern text), editing that exact text
+      // changes the merge key, so a 'merge' import can't recognize "this is the same rule, updated" and
+      // adds a duplicate instead of replacing. 'replace' sidesteps that by not trying to correlate at all.
       let errors = [];
       if (Array.isArray(cfg.hardBlock)) {
         const incoming = cfg.hardBlock.filter(v => typeof v === 'string' && v.trim()).map(v => ({ value: v.trim() }));
-        hardBlockKeywords = mergeByKey(hardBlockKeywords, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
+        const base = mode === 'replace' ? [] : hardBlockKeywords;
+        hardBlockKeywords = mergeByKey(base, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
       }
       if (Array.isArray(cfg.roster)) {
         const incoming = cfg.roster.filter(r => r && r.value).map(r => ({ type: r.type || 'CUSTOM', value: r.value, reason: r.reason || '設定檔匯入' }));
-        customDict = mergeByKey(customDict, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
+        const base = mode === 'replace' ? [] : customDict;
+        customDict = mergeByKey(base, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
       }
       if (Array.isArray(cfg.regexRules)) {
-        const { result, errors: regexErrors } = mergeRegexRules(regexRules, cfg.regexRules, 'auto-loaded', 'auto-loaded');
+        const base = mode === 'replace' ? [] : regexRules;
+        const { result, errors: regexErrors } = mergeRegexRules(base, cfg.regexRules, 'auto-loaded', 'auto-loaded');
         regexRules = result;
         errors = errors.concat(regexErrors);
       }
@@ -1495,26 +1503,32 @@
         showToast('設定檔解析失敗：' + e.message, 'danger');
         return;
       }
+      openConfigImportDialog(cfg);
+    }
+
+    function openConfigImportDialog(cfg) {
+      pendingImport = { dimension: 'config', cfg };
+
       const rosterCount = Array.isArray(cfg.roster) ? cfg.roster.length : 0;
       const hardBlockCount = Array.isArray(cfg.hardBlock) ? cfg.hardBlock.length : 0;
       const regexCount = Array.isArray(cfg.regexRules) ? cfg.regexRules.length : 0;
       const hasPrompts = !!(cfg.aiPrompts && typeof cfg.aiPrompts === 'object' && (cfg.aiPrompts.channel1 || cfg.aiPrompts.channel2));
-      const summary = `即將匯入：詞庫 ${rosterCount} 筆、硬阻斷關鍵字 ${hardBlockCount} 筆、自訂正則規則 ${regexCount} 筆${hasPrompts ? '，並包含自訂 AI 提示詞' : ''}。確定要套用嗎？`;
-      const ok = await showConfirmModal(summary, { title: '匯入設定檔', okLabel: '匯入並套用' });
-      if (!ok) return;
-      const errors = applyAutoConfig(cfg);
-      updateDictCountLabel();
-      renderHardBlockMgmtTable();
-      renderRegexMgmtTable();
-      renderAiPromptTextareas();
-      triggerPreview();
-      if (errors.length) {
-        showToast(`已匯入設定檔，但有 ${errors.length} 筆正則規則格式錯誤已略過套用。`, 'warning');
+
+      const errorList = document.getElementById('importModeErrorList');
+      const regexErrors = Array.isArray(cfg.regexRules) ? cfg.regexRules.map((row, idx) => tryCompileRegexRow(row, idx)).filter(r => !r.ok) : [];
+      if (regexErrors.length) {
+        errorList.classList.remove('hidden');
+        errorList.innerHTML = `以下 ${regexErrors.length} 筆正則規則格式錯誤，將被略過：<br>` +
+          regexErrors.map(e => `第 ${e.idx + 1} 筆（${escapeHtml(e.raw.pattern || '')}）：${escapeHtml(e.error)}`).join('<br>');
       } else {
-        showToast('已匯入設定檔並套用。', 'success');
+        errorList.classList.add('hidden');
+        errorList.innerHTML = '';
       }
-      const notice = document.getElementById('configImportNotice');
-      if (notice) removeToast(notice);
+
+      document.getElementById('importModeMessage').innerText =
+        `即將匯入：詞庫 ${rosterCount} 筆、硬阻斷關鍵字 ${hardBlockCount} 筆、自訂正則規則 ${regexCount} 筆${hasPrompts ? '，並包含自訂 AI 提示詞' : ''}。` +
+        `「與現有規則合併」會保留目前已有的內容，只新增/覆蓋同名項目；「完全取代」會清空目前每一項（含對內建規則的編輯），改成套用這份檔案裡的版本——如果你是為了讓「編輯過的內建規則」在重新整理後正確還原，請選完全取代。`;
+      openModal('importModeModal');
     }
 
     // 頁面開啟時常駐一則不自動消失的提示，點擊可直接開啟檔案選取視窗匯入設定檔。
@@ -1880,7 +1894,7 @@
     // ==========================================
     // CSV 匯入 → 合併/取代/取消 對話框
     // ==========================================
-    let pendingImport = null; // { dimension: 'roster'|'hardBlock'|'regex', rows: [...] }
+    let pendingImport = null; // { dimension: 'roster'|'hardBlock'|'regex', rows: [...] } or { dimension: 'config', cfg: {...} }
 
     function openImportDialog(dimension, rows) {
       if (!rows.length) { showToast('檔案中沒有可用的資料列。', 'warning'); return; }
@@ -1912,22 +1926,30 @@
 
     function confirmImportMode(mode) {
       if (!pendingImport) { closeModal('importModeModal'); return; }
-      const { dimension, rows } = pendingImport;
+      const { dimension } = pendingImport;
       let importErrors = [];
 
-      if (dimension === 'hardBlock') {
+      if (dimension === 'config') {
+        importErrors = applyAutoConfig(pendingImport.cfg, mode);
+        updateDictCountLabel();
+        renderHardBlockMgmtTable();
+        renderRegexMgmtTable();
+        renderAiPromptTextareas();
+        const notice = document.getElementById('configImportNotice');
+        if (notice) removeToast(notice);
+      } else if (dimension === 'hardBlock') {
         const base = mode === 'replace' ? [] : hardBlockKeywords;
-        hardBlockKeywords = mergeByKey(base, rows.map(v => ({ value: v })), e => e.value, 'manual', 'overridden');
+        hardBlockKeywords = mergeByKey(base, pendingImport.rows.map(v => ({ value: v })), e => e.value, 'manual', 'overridden');
         renderHardBlockMgmtTable();
       } else if (dimension === 'regex') {
         const base = mode === 'replace' ? [] : regexRules;
-        const { result, errors } = mergeRegexRules(base, rows, 'manual', 'overridden');
+        const { result, errors } = mergeRegexRules(base, pendingImport.rows, 'manual', 'overridden');
         regexRules = result;
         importErrors = errors;
         renderRegexMgmtTable();
       } else if (dimension === 'roster') {
         const base = mode === 'replace' ? [] : customDict;
-        customDict = mergeByKey(base, rows, e => e.value, 'manual', 'overridden');
+        customDict = mergeByKey(base, pendingImport.rows, e => e.value, 'manual', 'overridden');
         updateDictCountLabel();
       }
 
