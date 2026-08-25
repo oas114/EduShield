@@ -808,8 +808,8 @@
             <li>點擊工具列的<strong>「管理自訂防護規則」</strong>，切換到「硬阻斷關鍵字」或「正則規則」分頁。</li>
             <li>下載該分頁的 CSV 範本，依格式填入您的詞彙或正規表示式後存檔。</li>
             <li>點「匯入 CSV」選擇該檔案，依需求選擇「新增並合併」或「完全取代」。</li>
-            <li>若希望往後每次開啟都自動套用，可在同一個管理介面展開「進階設定」（僅桌面版顯示）點「轉存為自動載入檔」，並將下載的 <code class="bg-white border border-line px-1 rounded">edushield.config.js</code> 放到與 <code class="bg-white border border-line px-1 rounded">EduShield.html</code> 相同的資料夾，並以本機檔案方式開啟才會生效。</li>
-            <li>若手動修改後想恢復成內建預設值，在「管理自訂防護規則」展開「進階設定」點「重新載入設定檔」即可（僅桌面版顯示）。</li>
+            <li>若想把自訂規則分享給同事，或在其他電腦重複使用，可在同一個管理介面展開「進階設定」（僅桌面版顯示）點「轉存為設定檔」，下載 <code class="bg-white border border-line px-1 rounded">edushield.config.js</code>；之後要套用時，點「匯入設定檔」選取該檔案並確認摘要即可。<strong>注意：這是手動匯入，不會在重新整理或下次開啟時自動套用，每次都需要重新匯入一次。</strong></li>
+            <li>若想捨棄手動修改或已匯入的內容、回復成內建預設值，在「管理自訂防護規則」展開「進階設定」點「重設為預設值」即可（僅桌面版顯示）。</li>
           </ol>
         </div>
         
@@ -1288,7 +1288,7 @@
 
     function tryCompileRegexRow(row, idx) {
       try {
-        // 若呼叫端已經分開提供 pattern/flags（例如自動載入設定檔的 JSON 格式），優先採用；
+        // 若呼叫端已經分開提供 pattern/flags（例如匯入設定檔的 JSON 格式），優先採用；
         // 否則視為 CSV 匯入的單一欄位，可能是純 pattern 或 /pattern/flags 字面量字串。
         let pattern, flags;
         if (typeof row.flags === 'string' && row.flags) {
@@ -1341,7 +1341,7 @@
     }
 
     const SOURCE_BADGE_LABELS = {
-      builtin: '內建預設', 'auto-loaded': '腳本自動載入', manual: '手動匯入',
+      builtin: '內建預設', 'auto-loaded': '設定檔匯入', manual: '手動匯入',
       overridden: '自訂覆蓋', 'ai-session': 'AI 擷取(暫存)'
     };
     function sourceBadgeHtml(source) {
@@ -1351,7 +1351,7 @@
     }
 
     // ==========================================
-    // 合併/取代引擎、同資料夾自動載入設定檔
+    // 合併/取代引擎、手動匯入設定檔
     // ==========================================
     function mergeByKey(existingArr, incomingArr, keyFn, sourceForNew, sourceForOverwrite) {
       const byKey = new Map(existingArr.map(e => [keyFn(e), e]));
@@ -1380,7 +1380,7 @@
         hardBlockKeywords = mergeByKey(hardBlockKeywords, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
       }
       if (Array.isArray(cfg.roster)) {
-        const incoming = cfg.roster.filter(r => r && r.value).map(r => ({ type: r.type || 'CUSTOM', value: r.value, reason: r.reason || '自動載入設定檔' }));
+        const incoming = cfg.roster.filter(r => r && r.value).map(r => ({ type: r.type || 'CUSTOM', value: r.value, reason: r.reason || '設定檔匯入' }));
         customDict = mergeByKey(customDict, incoming, e => e.value, 'auto-loaded', 'auto-loaded');
       }
       if (Array.isArray(cfg.regexRules)) {

@@ -53,7 +53,7 @@ Whenever `EduShield_README.md` is updated, this file MUST be updated to match.
 
 ### 2.1 Detection & Masking Rule Engine (`REGEX_RULES_DEFAULT`)
 
-The system defines a frozen constant array `REGEX_RULES_DEFAULT` (`Object.freeze`) as the built-in baseline that "Reload Config" restores to. Detection logic actually reads from the live working state `regexRules` (each entry additionally carries `pattern`/`flags`/`source`), which can be extended via the "Manage Custom Protection Rules" UI — see 2.6. Each entry follows the format `{ type, regex, name, example }`. Tokens follow the format `{{TYPE_N}}`, where `N` is a per-type sequential counter.
+The system defines a frozen constant array `REGEX_RULES_DEFAULT` (`Object.freeze`) as the built-in baseline that "Reset to Defaults" restores to. Detection logic actually reads from the live working state `regexRules` (each entry additionally carries `pattern`/`flags`/`source`), which can be extended via the "Manage Custom Protection Rules" UI — see 2.6. Each entry follows the format `{ type, regex, name, example }`. Tokens follow the format `{{TYPE_N}}`, where `N` is a per-type sequential counter.
 
 **Priority Logic**: Inside `extractStaticEntities()`, entities are sorted before overlap removal (`occupied` array):
 1. `isCritical` entities take highest priority (Hard Block keywords first)
@@ -104,7 +104,7 @@ AI Channel 2 (risk assessment) can also trigger this flow if it returns `critica
   1. **CSV Upload** (`handleCsvUpload`): Uses `FileReader.readAsText()`, parsed via `parseCsvLine()` (supports standard CSV double-quote escaping, so field values may contain commas). Automatically skips header rows (if the first column contains "關鍵字" / keyword). The parsed rows are then handed to the Merge/Replace/Cancel dialog rather than blindly overwriting the dictionary — see 2.6.
   2. **Online Create / Edit** (`applyOnlineCsv`): Reads from each `.csv-kw-input` / `.csv-type-input` in `#csvEditTbody`. If `type` is left blank, defaults to `'CUSTOM'`. (This path keeps its original overwrite-everything behavior and does not go through the merge dialog.)
   3. **Manual Text Selection**: Select text in the editor, then click "設為機密" (Mark as Confidential) in the floating menu — adds entry with `type: 'CUSTOM'`.
-  4. **AI Return** (`processAnonymizePhase2`): Entities returned by Channel 1 are added with `isAi: true` and `source: 'ai-session'` — a per-document, session-only result excluded when exporting an auto-load config file.
+  4. **AI Return** (`processAnonymizePhase2`): Entities returned by Channel 1 are added with `isAi: true` and `source: 'ai-session'` — a per-document, session-only result excluded when exporting a config file.
 - **CSV Export**: `downloadOnlineCsv()` outputs UTF-8 with BOM, with keyword fields wrapped in double quotes; the blank template is served separately by `downloadCsvTemplate()` (filename `EduShield_詞庫範本.csv`, deliberately different from the export filename to avoid one overwriting the other).
 
 ### 2.4 Local AI Module (Ollama)
@@ -208,7 +208,7 @@ let hardBlockKeywords = []; // [{ value, source }]
 let regexRules = [];        // [{ type, pattern, flags, name, example, source }]
 let aiPrompts = { channel1: '', channel2: '' };
 ```
-The `source` field marks each rule's origin and is shown as a badge in both the management UI and the PII Rule Guide: `Built-in` / `Auto-loaded` / `Manually imported` / `Overridden` (`customDict` also has an internal-only `ai-session` tag for the current document's transient AI-extracted results, excluded when exporting a config file).
+The `source` field marks each rule's origin and is shown as a badge in both the management UI and the PII Rule Guide: `Built-in` / `Config file import` / `Manually imported` / `Overridden` (`customDict` also has an internal-only `ai-session` tag for the current document's transient AI-extracted results, excluded when exporting a config file).
 
 Regex rules no longer hold a real `RegExp` object directly — they're split into `pattern` (`regex.source`) and `flags` (`regex.flags`) strings, since a CSV/JSON config file can only carry strings. Every reconstruction of a `RegExp` goes through the `tryCompileRegexRow()` try/catch guard; a malformed rule is skipped and reported individually without aborting the rest of the scan.
 
@@ -221,12 +221,18 @@ Importing a CSV via "Manage Custom Protection Rules" (applies to Hard Block Keyw
 
 Any row that fails `new RegExp()` validation during a regex import is listed separately and skipped, without blocking the rest of the batch from importing.
 
-#### Same-Folder Auto-load Config File
+#### Manual Config File Import
 
-On startup, the system attempts to dynamically load `edushield.config.js` from the same folder as `EduShield.html` via `<script src="edushield.config.js">` (modeled on the existing Tailwind CDN / local `style.css` degradation IIFE):
-- **File absent**: silently skipped, with only a console message — no impact on regular users
-- **File present but has a syntax error**: does not crash the app; a console warning is logged and built-in defaults are kept
-- **File loads correctly**: its content is merged in (tagged `Auto-loaded`)
+> [!NOTE]
+> An earlier version auto-loaded `edushield.config.js` from the same folder on startup via `<script src="edushield.config.js">`. That approach let a tampered file execute arbitrary code without the user noticing, contradicting the "PII never leaves the browser" trust claim — it was replaced on 2026-08-25 with the manual import flow described below.
+
+A collapsible "Advanced Settings: Import / Export Config File" section at the bottom of the "Manage Custom Protection Rules" panel (hidden below desktop viewport widths) offers three buttons:
+- **Import Config File**: opens a file picker; once a file is selected, `extractAutoConfigJson()` does nothing but string-scanning and `JSON.parse()` (never `eval`, never executes file content), then shows a confirmation summary (counts of roster/hard-block/regex entries about to be imported) — nothing is applied until the user confirms (merged in, tagged `Config file import`).
+- **Export Config File**: packages the current in-memory state of all four dimensions (including every merge/override result) into the same config format for download, with the fixed filename `edushield.config.js` — share it with a colleague or reuse it on another machine.
+- **Reset to Defaults**: prompts for confirmation, then resets all four dimensions to their built-in defaults, discarding this session's manual edits or imported settings.
+
+> [!IMPORTANT]
+> This is a **manual** import — it does **not** apply automatically on refresh or the next time the page is opened; the user must click "Import Config File" and pick the file again each time. A persistent (non-auto-dismissing) notice on page load nudges the user to import; browser security prevents background-detecting whether a same-folder file exists (`fetch`/`XHR`/sandboxed-`iframe` reads of local files are all blocked), so the wording deliberately never claims a file was "detected."
 
 Config file format:
 ```javascript
@@ -238,12 +244,6 @@ window.EDUSHIELD_AUTO_CONFIG = {
   aiPrompts: { channel1: "...{{TEXT}}", channel2: "...{{TEXT}}" }
 };
 ```
-
-Both actions live inside a collapsible "Advanced Settings: Auto-load Config File" section at the bottom of the "Manage Custom Protection Rules" panel — hidden below desktop viewport widths (the same-folder workflow isn't practical on mobile), and showing an inline notice when the page is loaded via a URL instead of a local file, since the feature only takes effect for local `file://` usage.
-
-The "**Reload Config**" button there prompts for confirmation, then resets all four dimensions to their built-in defaults and re-runs the auto-load step above — useful for discarding this session's manual edits and returning to the "as-launched" state.
-
-The "**Export as Auto-load File**" button packages the current in-memory state of all four dimensions (including every merge/override result) into the same config format for download, with the fixed filename `edushield.config.js` — drop it next to `EduShield.html` and it will be picked up automatically on the next launch, or via "Reload Config".
 
 > [!NOTE]
 > This mechanism deliberately only handles rule/prompt configuration — it never touches the actual document content the user types in. `sessionVault`, the raw input textarea, etc. still fully honor the existing zero-trust, zero-persistence promise and vanish on page close or refresh.

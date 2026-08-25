@@ -52,7 +52,7 @@ To recompile:
 
 ### 2.1 偵測與遮蔽規則庫 (`REGEX_RULES_DEFAULT`)
 
-系統內建一個凍結的常數陣列 `REGEX_RULES_DEFAULT`（`Object.freeze`），每個物件格式為 `{ type, regex, name, example }`，做為「重新載入設定檔」的復原基準。偵測邏輯實際讀取的是由此建構出的即時運作狀態 `regexRules`（每筆多帶 `pattern`／`flags`／`source` 欄位），可透過「管理自訂防護規則」介面擴充，詳見 2.6 節。Token 格式為 `{{TYPE_N}}`，其中 `N` 為同類型的流水計數器。
+系統內建一個凍結的常數陣列 `REGEX_RULES_DEFAULT`（`Object.freeze`），每個物件格式為 `{ type, regex, name, example }`，做為「重設為預設值」的復原基準。偵測邏輯實際讀取的是由此建構出的即時運作狀態 `regexRules`（每筆多帶 `pattern`／`flags`／`source` 欄位），可透過「管理自訂防護規則」介面擴充，詳見 2.6 節。Token 格式為 `{{TYPE_N}}`，其中 `N` 為同類型的流水計數器。
 
 **優先權邏輯**：`extractStaticEntities()` 中，實體依下列優先順序排序後，再以「占位格」(`occupied` 陣列)去除重疊：
 1. `isCritical` 優先（硬阻斷詞彙最高優先）
@@ -103,7 +103,7 @@ AI 通道二（風險判定）也可能觸發此流程（若 AI 回傳 `critical
   1. **CSV 上傳** (`handleCsvUpload`)：使用 `FileReader.readAsText()` 讀取，透過 `parseCsvLine()` 解析（支援標準 CSV 雙引號跳脫，欄位值可含逗號），自動跳過標題列（若首欄含「關鍵字」）。解析完成後會交由「合併/取代/取消」對話框處理，不再直接整批覆蓋，詳見 2.6 節。
   2. **線上建立/編輯** (`applyOnlineCsv`)：從 `#csvEditTbody` 的每個 `.csv-kw-input` / `.csv-type-input` 讀取，type 留空時預設為 `'CUSTOM'`（此途徑維持原本的整批覆蓋行為，不經過合併對話框）
   3. **手動選取加入**：滑鼠選取文字後在浮動選單點擊「設為機密」，以 `type: 'CUSTOM'` 加入
-  4. **AI 回傳** (`processAnonymizePhase2`)：通道一回傳的實體會以 `isAi: true`、`source: 'ai-session'` 加入，屬於當次文件的暫存結果，「轉存為自動載入檔」時會被排除
+  4. **AI 回傳** (`processAnonymizePhase2`)：通道一回傳的實體會以 `isAi: true`、`source: 'ai-session'` 加入，屬於當次文件的暫存結果，「轉存為設定檔」時會被排除
 - **CSV 下載**：`downloadOnlineCsv()` 輸出 UTF-8 with BOM，關鍵字欄以雙引號包覆；空白範本則由 `downloadCsvTemplate()` 提供（檔名 `EduShield_詞庫範本.csv`，與匯出檔案分開命名，避免互相覆蓋）
 
 ### 2.4 地端 AI 模組（Ollama）
@@ -201,7 +201,7 @@ let hardBlockKeywords = []; // [{ value, source }]
 let regexRules = [];        // [{ type, pattern, flags, name, example, source }]
 let aiPrompts = { channel1: '', channel2: '' };
 ```
-`source` 欄位標示每筆規則的來源，並在管理介面與「教育隱私保護指南」中以徽章顯示：`內建預設`／`腳本自動載入`／`手動匯入`／`自訂覆蓋`（`customDict` 另有一個內部用的 `ai-session` 標籤，代表當次 AI 擷取的暫存結果，匯出設定檔時會被排除）。
+`source` 欄位標示每筆規則的來源，並在管理介面與「教育隱私保護指南」中以徽章顯示：`內建預設`／`設定檔匯入`／`手動匯入`／`自訂覆蓋`（`customDict` 另有一個內部用的 `ai-session` 標籤，代表當次 AI 擷取的暫存結果，匯出設定檔時會被排除）。
 
 正則規則不再直接持有 `RegExp` 物件，而是拆成 `pattern`（`regex.source`）與 `flags`（`regex.flags`）兩個字串欄位，因為 CSV／JSON 設定檔只能承載字串；每次重建 `RegExp` 都經過 `tryCompileRegexRow()` 的 try/catch 保護，格式錯誤的規則會被略過並個別回報錯誤，不會讓整個掃描流程中斷。
 
@@ -214,12 +214,18 @@ let aiPrompts = { channel1: '', channel2: '' };
 
 正則規則匯入時，任何無法通過 `new RegExp()` 驗證的列會被單獨列出、跳過，不影響同一批次中其他合法列的匯入。
 
-#### 同資料夾自動載入設定檔
+#### 手動匯入設定檔
 
-系統啟動時，會嘗試以 `<script src="edushield.config.js">` 動態載入與 `EduShield.html` 同資料夾的 `edushield.config.js`（機制仿照既有 Tailwind CDN／本地 `style.css` 的降級載入 IIFE）：
-- **檔案不存在**：靜默略過，僅在瀏覽器 Console 顯示提示訊息，不影響一般使用者
-- **檔案存在但有語法錯誤**：不會讓系統崩潰，僅在 Console 顯示警告並維持內建預設值
-- **檔案正常**：內容會以「新增並合併」的邏輯套用（來源標籤為「腳本自動載入」）
+> [!NOTE]
+> 早期版本曾以 `<script src="edushield.config.js">` 在系統啟動時自動載入同資料夾檔案；這個做法會讓被竄改的檔案在使用者毫無察覺下夾帶任意程式碼執行，牴觸「個資不離開瀏覽器」的核心信任主張，已於 2026-08-25 改為以下的使用者手動匯入流程。
+
+「管理自訂防護規則」面板底部「進階設定：匯入／匯出設定檔」摺疊區塊（僅桌面版寬度顯示）提供三個按鈕：
+- **匯入設定檔**：開啟檔案選取視窗，選取設定檔後，`extractAutoConfigJson()` 全程只做字串掃描與 `JSON.parse()`（絕不 `eval`／執行檔案內容），逐項驗證後跳出摘要確認視窗（列出即將匯入的詞庫／硬阻斷／正則規則筆數），使用者確認才會套用（以「新增並合併」邏輯套用，來源標籤為「設定檔匯入」）。
+- **轉存為設定檔**：把目前記憶體中四個維度的最新狀態（含所有合併/覆蓋結果）打包成同樣格式的 JavaScript 檔案供下載，檔名固定為 `edushield.config.js`，可用來分享給同事或在其他電腦重複使用。
+- **重設為預設值**：先跳出確認對話框，接著把四個維度重置回內建預設值，用來捨棄當次手動調整或已匯入的內容。
+
+> [!IMPORTANT]
+> 這是**手動**匯入，**不會**在重新整理或下次開啟頁面時自動套用——每次都需要重新點「匯入設定檔」選取一次。頁面開啟時會顯示一則不自動消失的提示引導使用者匯入；瀏覽器安全機制不允許背景偵測同資料夾檔案是否存在（`fetch`／`XHR`／沙盒 `iframe` 讀取本機檔案皆會被擋），所以文字刻意不聲稱「已偵測到設定檔」。
 
 設定檔格式範例：
 ```javascript
@@ -231,10 +237,6 @@ window.EDUSHIELD_AUTO_CONFIG = {
   aiPrompts: { channel1: "...{{TEXT}}", channel2: "...{{TEXT}}" }
 };
 ```
-
-「管理自訂防護規則」面板底部的「進階設定：自動載入設定檔」摺疊區塊（僅桌面版寬度顯示；手機介面因無法實際使用「同資料夾」流程而隱藏，且透過網址瀏覽時區塊內會顯示提示，說明此功能限本機檔案模式生效）裡的「**重新載入設定檔**」按鈕會先跳出確認對話框，接著把四個維度重置回內建預設值，再重新執行一次上述自動載入流程，可用來捨棄當次手動調整、恢復成「開機當下」的狀態。
-
-同一個摺疊區塊裡的「**轉存為自動載入檔**」按鈕，會把目前記憶體中四個維度的最新狀態（含所有合併/覆蓋結果）打包成同樣格式的 JavaScript 檔案供下載，檔名固定為 `edushield.config.js`，使用者只需把它放到與 `EduShield.html` 相同的資料夾，下次開啟或點擊「重新載入設定檔」即可自動套用。
 
 > [!NOTE]
 > 此機制刻意只處理「規則與提示詞設定」，不涉及使用者實際輸入的文件內容——`sessionVault`、原始資料輸入框等仍完全遵循既有的零信任、零持久化原則，頁面關閉或重整後立即消失。
