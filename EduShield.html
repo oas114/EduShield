@@ -2481,7 +2481,7 @@
         }
       } catch (e) {
         resultEl.classList.replace('text-brand-600', 'text-danger-600');
-        resultEl.innerText = "❌ 連線失敗。請確認 Ollama 已啟動，且已設定 CORS 環境變數。";
+        resultEl.innerText = "❌ 連線失敗。請確認 Ollama 已啟動，並依照上方步驟完成連線設定。";
       }
     }
 
@@ -3017,7 +3017,7 @@
         const checkRes = await fetch(`${url}/api/tags`);
         if (!checkRes.ok) throw new Error();
       } catch (err) {
-        showToast("無法連線，地端 AI (Ollama) 可能未啟動或未設定 CORS。請先啟動 Ollama。", 'danger');
+        showToast("無法連線地端 AI (Ollama)。請確認 Ollama 已啟動；若尚未完成連線設定，請點擊「設定」按鈕依步驟操作。", 'danger');
         phase2IsRunning = false;
         if (layer1Hint) layer1Hint.classList.remove("hidden");
         return;
@@ -3236,7 +3236,7 @@
           showToast('AI 掃描已中止。', 'info');
         } else {
           console.error(err);
-          showToast("AI 掃描失敗：\n" + err.message, 'danger');
+          showToast("AI 掃描發生錯誤，請確認 Ollama 服務正常運作後再試一次。", 'danger');
         }
       } finally {
         clearTimeout(timeoutHandle);
