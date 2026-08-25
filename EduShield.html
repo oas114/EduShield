@@ -2628,14 +2628,14 @@
         if (selectedText.length > 1) {
           const existingEnt = activeExtractedEntities.find(ent => ent.value === selectedText);
           if (existingEnt) {
-             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleSelectionAction('remove', '${escapeHtml(selectedText)}')">- 取消遮蔽【${existingEnt.reason}】"${escapeHtml(selectedText)}"</button>`;
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleSelectionAction('remove', '${escapeHtml(escapeForInlineJs(selectedText))}')">- 取消遮蔽【${existingEnt.reason}】"${escapeHtml(selectedText)}"</button>`;
           } else {
-             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleSelectionAction('add', '${escapeHtml(selectedText)}')">+ 將 "${escapeHtml(selectedText)}" 設為機密</button>`;
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleSelectionAction('add', '${escapeHtml(escapeForInlineJs(selectedText))}')">+ 將 "${escapeHtml(selectedText)}" 設為機密</button>`;
           }
         } else if (start === end) {
           const ent = activeExtractedEntities.find(ent => start > ent.start && start < ent.end);
           if (ent) {
-             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleSelectionAction('remove', '${escapeHtml(ent.value)}')">- 取消遮蔽【${ent.reason}】"${escapeHtml(ent.value)}"</button>`;
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleSelectionAction('remove', '${escapeHtml(escapeForInlineJs(ent.value))}')">- 取消遮蔽【${ent.reason}】"${escapeHtml(ent.value)}"</button>`;
           }
           if (isTable) {
              if (html) html += `<div class="h-px bg-ink-hover my-1 w-full"></div>`;
@@ -2815,7 +2815,7 @@
         
         el.className = `${bgClass} px-2 py-0.5 rounded text-xs border flex items-center transition-all cursor-default flex-shrink-0`;
         el.setAttribute('data-entity-chip', val);
-        el.innerHTML = `${escapeHtml(val)} <button onclick="addToWhitelist('${escapeHtml(val)}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
+        el.innerHTML = `${escapeHtml(val)} <button onclick="addToWhitelist('${escapeHtml(escapeForInlineJs(val))}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
         
         el.onmouseenter = (e) => {
           el.classList.replace(bgClass.split(' ')[0], hoverClass);
@@ -2983,8 +2983,8 @@
       reportContainer.innerHTML = reportData.map(item => `
         <div class="flex items-center gap-2 py-1 border-b border-line-soft last:border-0 cursor-default transition-all hover:bg-paper-sunken"
              data-report-row="${escapeHtml(item.raw)}"
-             onmouseenter="highlightEntityChip('${escapeHtml(item.raw)}', true)"
-             onmouseleave="highlightEntityChip('${escapeHtml(item.raw)}', false)">
+             onmouseenter="highlightEntityChip('${escapeHtml(escapeForInlineJs(item.raw))}', true)"
+             onmouseleave="highlightEntityChip('${escapeHtml(escapeForInlineJs(item.raw))}', false)">
           <span class="font-semibold text-ink">${escapeHtml(item.raw)}</span>
           <span class="text-ink-faint">→</span>
           <span class="text-brand-600">${escapeHtml(item.token)}</span>
@@ -3324,7 +3324,8 @@
       const missing = [];
 
       Object.entries(sessionVault).forEach(([token, rawVal]) => {
-        const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${escapeHtml(rawVal)}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
+        const jsEscapedRawVal = escapeHtml(escapeForInlineJs(rawVal));
+        const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRawVal}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
         if (replyText.includes(token)) {
           html = html.split(token).join(span);
         } else {
@@ -3592,14 +3593,14 @@
         if (selectedText.length > 1) {
           const existingEnt = quickMaskActiveEntities.find(ent => ent.value === selectedText);
           if (existingEnt) {
-             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('remove', '${escapeHtml(selectedText)}')">- 取消遮蔽【${existingEnt.reason}】"${escapeHtml(selectedText)}"</button>`;
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('remove', '${escapeHtml(escapeForInlineJs(selectedText))}')">- 取消遮蔽【${existingEnt.reason}】"${escapeHtml(selectedText)}"</button>`;
           } else {
-             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('add', '${escapeHtml(selectedText)}')">+ 將 "${escapeHtml(selectedText)}" 設為機密</button>`;
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('add', '${escapeHtml(escapeForInlineJs(selectedText))}')">+ 將 "${escapeHtml(selectedText)}" 設為機密</button>`;
           }
         } else if (start === end) {
           const ent = quickMaskActiveEntities.find(ent => start > ent.start && start < ent.end);
           if (ent) {
-             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('remove', '${escapeHtml(ent.value)}')">- 取消遮蔽【${ent.reason}】"${escapeHtml(ent.value)}"</button>`;
+             html += `<button class="px-3 py-1.5 text-left hover:bg-ink-hover transition-colors w-full" onclick="handleQuickMaskSelectionAction('remove', '${escapeHtml(escapeForInlineJs(ent.value))}')">- 取消遮蔽【${ent.reason}】"${escapeHtml(ent.value)}"</button>`;
           }
           if (isTable) {
              if (html) html += `<div class="h-px bg-ink-hover my-1 w-full"></div>`;
@@ -3693,7 +3694,8 @@
           if (overlapStart < overlapEnd) {
             const raw = rangeText.slice(overlapStart, overlapEnd);
             const escapedRaw = escapeHtml(raw);
-            rangeHtml += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${ent.type}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${escapedRaw}')">${escapedRaw}</span>`;
+            const jsEscapedRaw = escapeHtml(escapeForInlineJs(raw));
+            rangeHtml += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${ent.type}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRaw}')">${escapedRaw}</span>`;
             cursor = overlapEnd;
           }
         });
@@ -3713,7 +3715,8 @@
             let cellHtml;
             if (quickMaskTableMasks.has(key)) {
               const escapedCell = escapeHtml(cellText);
-              cellHtml = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="CUSTOM" data-raw="${escapedCell}" contenteditable="false" onclick="toggleMask(this, '${escapedCell}')">${escapedCell}</span>`;
+              const jsEscapedCell = escapeHtml(escapeForInlineJs(cellText));
+              cellHtml = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="CUSTOM" data-raw="${escapedCell}" contenteditable="false" onclick="toggleMask(this, '${jsEscapedCell}')">${escapedCell}</span>`;
             } else {
               cellHtml = wrapQuickMaskEntityRange(text, lineCursor, lineCursor + cellText.length);
             }
