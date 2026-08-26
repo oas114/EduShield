@@ -80,7 +80,7 @@ The system defines a frozen constant array `REGEX_RULES_DEFAULT` (`Object.freeze
 | Disciplinary Record | `DISCIPLINE_N` | `(?:予以)?(?:警告|大過|小過|...)` | 警告一次 |
 | School Title / Role | `TITLE_N` | Principal / Dean / Director / Teacher / Homeroom, etc. (composite Regex) | 學務主任 |
 | Form Case Number | `FORM_NUM_N` | `\b\d{8}\b` | 12345678 |
-| Official Document Number | `DOC_NUM_N` | `\b[A-Z]\d{10}\b` | A1234567890 |
+| Official Document Number | `DOC_NUM_N` | `[一-龥A-Za-z0-9()（）]{2,12}字第\s*\d{2,10}\s*號` | 臺教中字第1140012345號 |
 | Vendor / Contractor Name | `VENDOR_N` | `...(?:股份有限公司|有限公司|企業社|...)` | 台灣資訊股份有限公司 |
 | Budget / Expense Amount | `AMOUNT_N` | `NT$...\|...\d+\s*(?:元|萬元)` | 1,250,000 元 |
 
