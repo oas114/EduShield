@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%231e40af'/><stop offset='100%25' stop-color='%233b82f6'/></linearGradient></defs><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' fill='url(%23g)'/></svg>" />
   <!-- 設計 Token：無論下面哪個 Tailwind 載入順位啟動（CDN 或本地 style.css）都一定會載入，
        讓兩條路徑都能解析到一樣的 var(--...) 語意色參照。要跟 dev/tailwind.config.js 的
-       "colors" 區塊、以及 TokenShield 那邊對應的區塊保持同步（除了 --brand-* 這組品牌色
+       "colors" 區塊、以及 MaskFirst 那邊對應的區塊保持同步（除了 --brand-* 這組品牌色
        兩邊本來就不同之外，其餘應完全一致）。 -->
   <style>
     :root {
@@ -360,7 +360,7 @@
         </div>
       </div>
 
-      <!-- 桌面版限定：詞庫管理 + 指南/設定/管理規則圖示，靠右對齊（與 TokenShield 一致）。
+      <!-- 桌面版限定：詞庫管理 + 指南/設定/管理規則圖示，靠右對齊（與 MaskFirst 一致）。
            手機版收進上面的「更多」選單，不在這裡重複顯示。按鈕高度對齊左側頁籤（h-10）。 -->
       <div class="hidden lg:flex items-center gap-1.5">
         <button id="dictCountLabel" onclick="openEditCsvModal()" title="自訂詞庫管理" class="h-10 inline-flex items-center bg-white hover:bg-paper-hover text-ink-secondary px-3 rounded-lg text-xs font-mono transition-colors border border-line-strong">

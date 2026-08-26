@@ -24,8 +24,8 @@ Tailwind CDN 還是編譯好的 `style.css` 離線備援都能正確解析——
 | `brand`（50–900） | 主要操作、active 狀態、連結，也刻意身兼「成功／資訊提示」角色 | EduShield 品牌色是**藍色**。成功／資訊色刻意沒有跟品牌色脫鉤，理由見下方決策說明 |
 | `danger`（50–800） | 破壞性操作、錯誤訊息、極敏感發現 | 把原本 red 跟 rose 兩組色階合併成一組 |
 | `warning`（50–900） | 非阻斷性警示、提醒狀態 | |
-| `accent-ai`（50–700，indigo） | Layer 2 地端 AI 語意掃描的觸發按鈕、手動表格遮蔽的標示 chip | 品牌無關的共用色——TokenShield 跟 EduShield 用同一組色相，因為它標記的是「這是一個特殊的次要動作」，跟品牌識別無關 |
-| `ai-finding`（50–700，purple） | 標示「這是本地 AI（而非靜態正則層）找到的」實體 chip | 同樣是品牌無關、跟 TokenShield 共用的色系——用來讓使用者一眼看出「這個高亮是 AI 那一關找到的」，跟 `accent-ai` 的按鈕/動作角色是不同概念 |
+| `accent-ai`（50–700，indigo） | Layer 2 地端 AI 語意掃描的觸發按鈕、手動表格遮蔽的標示 chip | 品牌無關的共用色——MaskFirst 跟 EduShield 用同一組色相，因為它標記的是「這是一個特殊的次要動作」，跟品牌識別無關 |
+| `ai-finding`（50–700，purple） | 標示「這是本地 AI（而非靜態正則層）找到的」實體 chip | 同樣是品牌無關、跟 MaskFirst 共用的色系——用來讓使用者一眼看出「這個高亮是 AI 那一關找到的」，跟 `accent-ai` 的按鈕/動作角色是不同概念 |
 
 **決策說明（成功色＝品牌色）：** 一般設計系統會讓「成功」有自己獨立的綠色，跟品牌色脫鉤，但
 EduShield 的品牌色本身就是藍色，如果硬要為「成功」另外配一個綠色系，只會讓使用者困惑「這個綠色
@@ -89,8 +89,8 @@ Header 工具列裡的按鈕會隨時間累積（詞庫計數、規則指南、�
   `left` 夾在視窗左右各 8px 邊界內。用 `mousedown` 事件偵測點擊選單外部來關閉（見
   `toggleMoreMenu()`／`closeMoreMenu()` 旁邊的監聽器），跟既有的文字選取右鍵選單用同一套模式。
 
-## 5. 跟 TokenShield 保持同步
+## 5. 跟 MaskFirst 保持同步
 
-TokenShield 的 `docs/DESIGN_LANGUAGE.md`（英文）記錄的是同一套系統，唯一刻意的差異是它的
+MaskFirst 的 `docs/DESIGN_LANGUAGE.md`（英文）記錄的是同一套系統，唯一刻意的差異是它的
 `brand` 色階是 emerald 而不是藍色。除此之外——token 命名、狀態規範、表單／破壞性操作規範——兩份
 文件應該完全一致。改了一邊，記得也去改另一邊。

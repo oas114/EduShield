@@ -142,16 +142,16 @@ EduShield 預設的 `REGEX_RULES` 引擎針對**台灣**的身分識別碼與資
 
 ---
 
-## 國際版姊妹專案：TokenShield
+## 國際版姊妹專案：MaskFirst
 
-若您需要的不是台灣教育場域專用規則，而是**面向個人或企業、支援美國／歐盟（GDPR）／英國地區規則切換**的英文版工具，歡迎試用姊妹專案 **[TokenShield](https://github.com/oas114/TokenShield)**。
+若您需要的不是台灣教育場域專用規則，而是**面向個人或企業、支援美國／歐盟（GDPR）／英國地區規則切換**的英文版工具，歡迎試用姊妹專案 **[MaskFirst](https://github.com/oas114/MaskFirst)**。
 
 * 沿用與 EduShield 相同的零信任、單檔案、遮蔽 → AI → 還原引擎
 * 內建可切換的地區規則庫（美國／歐盟／英國 ＋ 永遠啟用的全域底層），避免不同國家格式互相誤判
 * 提供 Personal（個人）／Business（企業）身分模式，各自對應獨立的硬阻斷詞庫
 * 全英文介面，並附上可直接複製使用的地端 AI 提示詞範本
 
-✨ **[前往 TokenShield 互動式體驗手冊](https://oasgrow.com/TokenShield/)** ｜ 技術文件：[TokenShield_README.zh-TW.md](https://github.com/oas114/TokenShield/blob/main/docs/TokenShield_README.zh-TW.md)
+✨ **[前往 MaskFirst 互動式體驗手冊](https://oasgrow.com/MaskFirst/)** ｜ 技術文件：[MaskFirst_README.zh-TW.md](https://github.com/oas114/MaskFirst/blob/main/docs/MaskFirst_README.zh-TW.md)
 
 ## 未來規劃
 
@@ -161,7 +161,7 @@ EduShield 是公益性質的開源專案，規劃中的後續開發方向包含�
 2. **持續維護**：擴充並持續更新台灣專屬的個資規則庫。
 3. **AI 整合研究**：提升地端 LLM（Ollama）語意偵測的準確度。
 
-> 跨產品線的後續規劃（如稽核日誌、企業版功能等）以姊妹專案 **[TokenShield](https://github.com/oas114/TokenShield)** 的規劃為主。
+> 跨產品線的後續規劃（如稽核日誌、企業版功能等）以姊妹專案 **[MaskFirst](https://github.com/oas114/MaskFirst)** 的規劃為主。
 
 ---
 

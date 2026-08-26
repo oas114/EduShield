@@ -144,16 +144,16 @@ To add a Hard Block keyword, search for `HARD_BLOCK_KEYWORDS` and add a string t
 
 ---
 
-## International Sibling Project: TokenShield
+## International Sibling Project: MaskFirst
 
-If you need something other than Taiwan-education-specific rules — an English-language tool for **individuals or businesses**, with switchable **US / EU (GDPR) / UK** rule presets — check out the sibling project **[TokenShield](https://github.com/oas114/TokenShield)**.
+If you need something other than Taiwan-education-specific rules — an English-language tool for **individuals or businesses**, with switchable **US / EU (GDPR) / UK** rule presets — check out the sibling project **[MaskFirst](https://github.com/oas114/MaskFirst)**.
 
 * Reuses the same zero-trust, single-file, Mask → AI → Restore engine as EduShield
 * Switchable regional rule presets (US / EU / UK + an always-on Global baseline), designed to avoid cross-country format collisions
 * Personal / Business persona toggle, each with its own Hard Block keyword set
 * Fully English UI, plus ready-to-copy local AI prompt templates
 
-✨ **[Try the TokenShield Interactive Manual](https://oasgrow.com/TokenShield/)** | Docs: [TokenShield_README.md](https://github.com/oas114/TokenShield/blob/main/docs/TokenShield_README.md)
+✨ **[Try the MaskFirst Interactive Manual](https://oasgrow.com/MaskFirst/)** | Docs: [MaskFirst_README.md](https://github.com/oas114/MaskFirst/blob/main/docs/MaskFirst_README.md)
 
 ## Roadmap
 
@@ -163,7 +163,7 @@ EduShield is an open-source public-benefit project. Planned development includes
 2. **Ongoing Maintenance**: Expand and keep the Taiwan-specific PII rule library current.
 3. **AI Integration Research**: Improve local LLM (Ollama) semantic detection accuracy.
 
-> Cross-product roadmap items (e.g., audit logs, enterprise features) now live in the sibling project **[TokenShield](https://github.com/oas114/TokenShield)**'s roadmap.
+> Cross-product roadmap items (e.g., audit logs, enterprise features) now live in the sibling project **[MaskFirst](https://github.com/oas114/MaskFirst)**'s roadmap.
 
 ---
 
