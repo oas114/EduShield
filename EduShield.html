@@ -366,14 +366,17 @@
         <button id="dictCountLabel" onclick="openEditCsvModal()" title="自訂詞庫管理" class="h-10 inline-flex items-center bg-white hover:bg-paper-hover text-ink-secondary px-3 rounded-lg text-xs font-mono transition-colors border border-line-strong">
           詞庫: 0
         </button>
-        <button onclick="openGuide()" title="教育隱私保護指南" aria-label="教育隱私保護指南" class="h-10 w-10 bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover rounded-lg transition-colors flex items-center justify-center">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.967 8.967 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+        <button onclick="openGuide()" title="教育隱私保護指南" aria-label="教育隱私保護指南" class="h-10 w-10 2xl:w-auto 2xl:px-3 bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.967 8.967 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+          <span class="hidden 2xl:inline text-xs font-medium whitespace-nowrap">指南</span>
         </button>
-        <button id="manageProtectionBtn" onclick="openProtectionManagerModal()" title="管理自訂防護規則" aria-label="管理自訂防護規則" class="h-10 w-10 bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover rounded-lg transition-colors flex items-center justify-center">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+        <button id="manageProtectionBtn" onclick="openProtectionManagerModal()" title="管理自訂防護規則" aria-label="管理自訂防護規則" class="h-10 w-10 2xl:w-auto 2xl:px-3 bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+          <span class="hidden 2xl:inline text-xs font-medium whitespace-nowrap">管理規則</span>
         </button>
-        <button onclick="openSettings()" title="設定" aria-label="設定" class="h-10 w-10 bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover rounded-lg transition-colors flex items-center justify-center">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <button onclick="openSettings()" title="設定" aria-label="設定" class="h-10 w-10 2xl:w-auto 2xl:px-3 bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover rounded-lg transition-colors flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="hidden 2xl:inline text-xs font-medium whitespace-nowrap">設定</span>
         </button>
       </div>
     </div>
@@ -420,7 +423,7 @@
         </div>
 
         <div class="p-4 border-t border-line-soft bg-paper-sunken flex-shrink-0">
-          <button id="phase1Btn" onclick="processAnonymizePhase1()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2">
+          <button id="phase1Btn" onclick="processAnonymizePhase1()" title="快捷鍵：Ctrl+Enter" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2">
             <span id="phase1BtnText">執行去識別化</span>
           </button>
         </div>
@@ -452,7 +455,7 @@
               <svg id="phase2Spinner" class="hidden animate-spin w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"></path></svg>
               <span id="phase2BtnText" class="whitespace-nowrap truncate">透過地端 AI 深度掃描</span>
             </button>
-            <button id="copyPromptBtn" onclick="copyAnonymizedPrompt()" disabled class="flex-1 bg-ink hover:bg-ink-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm text-center">
+            <button id="copyPromptBtn" onclick="copyAnonymizedPrompt()" disabled title="快捷鍵：Ctrl+Alt+C" class="flex-1 bg-ink hover:bg-ink-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm text-center">
               複製已遮蔽資料
             </button>
           </div>
@@ -503,7 +506,7 @@
             <button onclick="pasteFromClipboard()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-sm whitespace-nowrap">
               貼上剪貼簿
             </button>
-            <button onclick="processRestore()" class="flex-[2] bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+            <button onclick="processRestore()" title="快捷鍵：Ctrl+Enter" class="flex-[2] bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
               執行還原
             </button>
           </div>
@@ -537,7 +540,7 @@
             <button onclick="restoreSelectAll()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-sm whitespace-nowrap">
               全選
             </button>
-            <button onclick="copyRestoredResult()" class="flex-[2] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+            <button onclick="copyRestoredResult()" title="快捷鍵：Ctrl+Alt+C" class="flex-[2] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
               複製還原文字
             </button>
           </div>
@@ -562,7 +565,7 @@
           </div>
         </div>
         <div class="p-4 border-t border-line-soft bg-paper-sunken flex-shrink-0">
-          <button onclick="processQuickMask()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm">
+          <button onclick="processQuickMask()" title="快捷鍵：Ctrl+Enter" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors text-sm">
             偵測
           </button>
         </div>
@@ -589,7 +592,7 @@
           <button onclick="quickMaskSelectAll()" class="flex-[1] bg-white border border-line-strong hover:bg-paper-sunken text-ink-hover font-medium py-2 px-3 rounded-lg shadow-sm transition-colors text-xs sm:text-sm whitespace-nowrap">
             全選
           </button>
-          <button onclick="copyQuickMaskResult()" class="flex-[2] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
+          <button onclick="copyQuickMaskResult()" title="快捷鍵：Ctrl+Alt+C" class="flex-[2] bg-ink hover:bg-ink-hover text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors text-sm">
             複製遮蔽後文字
           </button>
         </div>
@@ -2044,6 +2047,27 @@
       }
     }
 
+    // 核心動作鍵盤快捷鍵：Ctrl+Enter 執行目前頁籤的主要動作（去識別化／執行還原／快速遮蔽偵測），
+    // Ctrl+Alt+C 複製目前頁籤的結果。複製鍵刻意避開 Ctrl+Shift+C（多數瀏覽器保留給「檢查元素」）。
+    // 任何彈出視窗開啟時停用，避免跟視窗內的操作互相干擾。
+    document.addEventListener('keydown', (e) => {
+      if (document.querySelector('[id$="Modal"]:not(.hidden)')) return;
+      const activeTab = !document.getElementById('viewPhase1').classList.contains('hidden') ? 1
+        : (!document.getElementById('viewPhase2').classList.contains('hidden') ? 2 : 3);
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.altKey && !e.shiftKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (activeTab === 1) processAnonymizePhase1();
+        else if (activeTab === 2) processRestore();
+        else processQuickMask();
+      } else if (mod && e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        if (activeTab === 1) { if (!document.getElementById('copyPromptBtn').disabled) copyAnonymizedPrompt(); }
+        else if (activeTab === 2) copyRestoredResult();
+        else copyQuickMaskResult();
+      }
+    });
+
     function openModal(id) {
       const m = document.getElementById(id);
       m.classList.remove('hidden');
@@ -3008,7 +3032,7 @@
         
         el.className = `${bgClass} px-2 py-0.5 rounded text-xs border flex items-center transition-all cursor-default flex-shrink-0`;
         el.setAttribute('data-entity-chip', val);
-        el.innerHTML = `${escapeHtml(val)} <button onclick="addToWhitelist('${escapeHtml(escapeForInlineJs(val))}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
+        el.innerHTML = `${escapeHtml(val)} <span class="opacity-60 text-[9px] ml-1 whitespace-nowrap">${escapeHtml(data.reason || '')}</span> <button onclick="addToWhitelist('${escapeHtml(escapeForInlineJs(val))}')" class="ml-1.5 ${btnClass} font-bold">&times;</button>`;
         
         el.onmouseenter = (e) => {
           el.classList.replace(bgClass.split(' ')[0], hoverClass);

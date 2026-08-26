@@ -284,7 +284,7 @@ The system offers two ways to manage custom terms (e.g., internal project names,
 #### Step 2: Input Raw Data
 
 1. Paste your document or table content into the **"原始資料輸入"** (Raw Data Input) area on the left.
-2. The system scans in real time (200ms debounce) and highlights detected sensitive terms in color. All matched items appear as chips in the **"偵測項目"** (Detected Items) panel below.
+2. The system scans in real time (200ms debounce) and highlights detected sensitive terms in color. All matched items appear as chips in the **"偵測項目"** (Detected Items) panel below, each chip tagged with its category (e.g. "姓名"/Name, "電話"/Phone) so you don't have to hover to tell them apart.
    > Note: Input longer than 50,000 characters will trigger a performance warning.
 3. To **un-mask a specific term**: Click the `×` on its chip, or select the text and choose "取消遮蔽" (Unmask) from the floating menu.
 4. To **manually mark additional terms**: Select the text, then click "設為機密" (Mark as Confidential) in the floating menu.
@@ -325,6 +325,17 @@ If Ollama is configured, the **"透過地端 AI 深度掃描"** (Local AI Deep S
 5. The **"還原結果"** (Restore Result) area is a fully editable rich-text zone. Click any restored token to cycle through Show / Partial Mask / Full Mask states
 6. Click **"清除結果"** (Clear Result) to reset the restore area and status bar while preserving the AI reply (so you can tweak and re-restore)
 7. When done, click **"複製還原文字"** (Copy Restored Text) to finalize
+
+#### Keyboard Shortcuts
+
+All three tabs (De-identification / Restore / Quick Mask) support the following shortcuts, scoped to the currently active tab:
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Enter` | Run the active tab's primary action (Execute De-identification / Run Restore / Detect) |
+| `Ctrl+Alt+C` | Copy the active tab's result |
+
+Copy deliberately avoids `Ctrl+Shift+C`, which most browsers reserve for "Inspect Element". Shortcuts are disabled while any modal (Settings, Guide, Manage Custom Protection Rules, etc.) is open, to avoid conflicting with in-modal interactions.
 
 ### 3.3 Troubleshooting
 
