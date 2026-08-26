@@ -305,7 +305,7 @@
   <!-- 頂部導覽與頁籤 -->
   <header class="bg-white border-b border-line sticky top-0 z-20 shadow-sm flex-shrink-0">
     <div class="max-w-[90rem] mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
-      <div class="flex items-center gap-2 sm:gap-6 flex-shrink-0 min-w-0">
+      <div class="flex items-center gap-2 sm:gap-6 min-w-0">
         <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
           <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--brand-800),var(--brand-500));border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -316,21 +316,21 @@
         </div>
         <!-- 頁籤切換：永遠緊跟在 logo 右邊，不隨斷點切換位置（避免忽左忽右）；
              詞庫圖示與漢堡選單也在同一列，確保任何寬度下 header 都只佔一行。 -->
-        <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <div class="flex bg-paper-hover p-1 rounded-lg gap-1 flex-shrink-0">
-            <button id="tabBtn1" onclick="switchTab(1)" class="px-2 sm:px-5 py-1.5 text-xs sm:text-sm font-semibold rounded-md bg-white shadow-sm text-brand-600 transition-all">
+        <div class="flex items-center gap-1 sm:gap-2 min-w-0">
+          <div class="flex bg-paper-hover p-1 rounded-lg gap-1 min-w-0 overflow-x-auto">
+            <button id="tabBtn1" onclick="switchTab(1)" class="px-2 sm:px-3 md:px-5 py-1.5 text-xs sm:text-sm font-semibold rounded-md bg-white shadow-sm text-brand-600 transition-all whitespace-nowrap">
               去識別化
             </button>
-            <button id="tabBtn2" onclick="switchTab(2)" class="px-2 sm:px-5 py-1.5 text-xs sm:text-sm font-medium rounded-md text-ink-muted hover:text-ink-hover transition-all">
+            <button id="tabBtn2" onclick="switchTab(2)" class="px-2 sm:px-3 md:px-5 py-1.5 text-xs sm:text-sm font-medium rounded-md text-ink-muted hover:text-ink-hover transition-all whitespace-nowrap">
               還原
             </button>
-            <button id="tabBtn3" onclick="switchTab(3)" class="px-2 sm:px-5 py-1.5 text-xs sm:text-sm font-medium rounded-md text-ink-muted hover:text-ink-hover transition-all">
+            <button id="tabBtn3" onclick="switchTab(3)" class="px-2 sm:px-3 md:px-5 py-1.5 text-xs sm:text-sm font-medium rounded-md text-ink-muted hover:text-ink-hover transition-all whitespace-nowrap">
               快速遮蔽
             </button>
           </div>
 
           <!-- 手機版：詞庫用小圖示 + 數字徽章取代完整文字按鈕，省下的寬度用來讓漢堡選單與頁籤同列。 -->
-          <button id="dictCountLabelMobile" onclick="openEditCsvModal()" title="自訂詞庫管理" aria-label="自訂詞庫管理" class="lg:hidden relative bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover p-1 rounded-lg transition-colors flex items-center justify-center">
+          <button id="dictCountLabelMobile" onclick="openEditCsvModal()" title="自訂詞庫管理" aria-label="自訂詞庫管理" class="lg:hidden flex-shrink-0 relative bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover p-1 rounded-lg transition-colors flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 6h.008v.008H6V6z"/></svg>
             <span id="dictCountBadgeMobile" class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">0</span>
           </button>
@@ -338,7 +338,7 @@
           <!-- 手機版：收進「更多」選單。下拉選單的位置由 JS 計算（fixed，並夾在視窗範圍內），
                不用 CSS 的 right-0 錨定——因為這顆按鈕在換行後的工具列裡實際位置，會隨內容寬度變動，
                純 CSS 錨定可能會讓選單跑出畫面外。 -->
-          <div class="lg:hidden">
+          <div class="lg:hidden flex-shrink-0">
             <button id="moreMenuBtn" onclick="toggleMoreMenu()" title="更多" aria-label="更多" aria-expanded="false" aria-haspopup="true" class="bg-white hover:bg-paper-sunken border border-line-strong text-ink-hover p-1 rounded-lg transition-colors flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
             </button>
