@@ -1,6 +1,9 @@
 node_modules/
 .DS_Store
 
+# 內嵌函式庫實驗測試檔（非正式產品內容）
+*.test-embed.html
+
 # AI Assistant Configs
 .agents/
 CLAUDE.md

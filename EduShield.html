@@ -3502,7 +3502,8 @@
           const rawVal = sessionVault[token];
           const isMissing = missingTokens.includes(token);
           const bgClass = isMissing ? 'bg-danger-100 text-danger-800 border-danger-400' : 'bg-line text-ink border-line-strong';
-          html += `<span class="inline-block px-1.5 py-0.5 mx-0.5 rounded text-xs font-semibold border transition-all cursor-default ${bgClass}" data-token="${escapeHtml(token)}" onmouseenter="showGlobalTooltip(event, '標籤: ${escapeHtml(token)}'); highlightCrossReference('${escapeHtml(token)}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${escapeHtml(token)}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${escapeHtml(token)}')">${escapeHtml(rawVal)}</span>`;
+          const jsToken = escapeHtml(escapeForInlineJs(token));
+          html += `<span class="inline-block px-1.5 py-0.5 mx-0.5 rounded text-xs font-semibold border transition-all cursor-default ${bgClass}" data-token="${escapeHtml(token)}" onmouseenter="showGlobalTooltip(event, '標籤: ${jsToken}'); highlightCrossReference('${jsToken}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${jsToken}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${jsToken}')">${escapeHtml(rawVal)}</span>`;
         } else {
           html += escapeHtml(seg.text);
         }
@@ -3526,7 +3527,7 @@
         const fixClick = isMissing ? ` onclick="openMissingTokenFixModal('${jsEscapedToken}')"` : '';
         const fixTitle = isMissing ? '（點擊手動修復）' : '';
         return `
-          <div class="inline-block ${cls} px-2 py-1 rounded text-xs transition-all" data-token="${token}"${fixClick} onmouseenter="showGlobalTooltip(event, '標籤: ${token}${fixTitle}'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token}${fixTitle}')">
+          <div class="inline-block ${cls} px-2 py-1 rounded text-xs transition-all" data-token="${escapeHtml(token)}"${fixClick} onmouseenter="showGlobalTooltip(event, '標籤: ${jsEscapedToken}${fixTitle}'); highlightCrossReference('${jsEscapedToken}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${jsEscapedToken}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${jsEscapedToken}${fixTitle}')">
             ${escapeHtml(raw)}
           </div>`;
       }).join('');
@@ -3559,7 +3560,8 @@
 
       const rawVal = sessionVault[token];
       const jsEscapedRawVal = escapeHtml(escapeForInlineJs(rawVal));
-      const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRawVal}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
+      const jsEscapedToken = escapeHtml(escapeForInlineJs(token));
+      const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${escapeHtml(token)}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRawVal}')" onmouseenter="showGlobalTooltip(event, '標籤: ${jsEscapedToken} (點擊可切換遮蔽)'); highlightCrossReference('${jsEscapedToken}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${jsEscapedToken}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${jsEscapedToken} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
 
       const outputEl = document.getElementById('restoredOutputView');
       const escapedInput = escapeHtml(input);
@@ -3590,7 +3592,8 @@
 
       Object.entries(sessionVault).forEach(([token, rawVal]) => {
         const jsEscapedRawVal = escapeHtml(escapeForInlineJs(rawVal));
-        const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${token}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRawVal}')" onmouseenter="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)'); highlightCrossReference('${token}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${token}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${token} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
+        const jsEscapedToken = escapeHtml(escapeForInlineJs(token));
+        const span = `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-token="${escapeHtml(token)}" data-raw="${escapeHtml(rawVal)}" data-mask-state="0" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRawVal}')" onmouseenter="showGlobalTooltip(event, '標籤: ${jsEscapedToken} (點擊可切換遮蔽)'); highlightCrossReference('${jsEscapedToken}', true)" onmouseleave="hideGlobalTooltip(); highlightCrossReference('${jsEscapedToken}', false)" onmousemove="showGlobalTooltip(event, '標籤: ${jsEscapedToken} (點擊可切換遮蔽)')">${escapeHtml(rawVal)}</span>`;
         if (replyText.includes(token)) {
           html = html.split(token).join(span);
         } else {
@@ -3967,7 +3970,7 @@
             const raw = rangeText.slice(overlapStart, overlapEnd);
             const escapedRaw = escapeHtml(raw);
             const jsEscapedRaw = escapeHtml(escapeForInlineJs(raw));
-            rangeHtml += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${ent.type}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRaw}')">${escapedRaw}</span>`;
+            rangeHtml += `<span class="inline-block bg-brand-50 text-brand-800 px-1 rounded font-semibold border-b border-brand-200 transition-all cursor-pointer hover:bg-brand-100" data-mask-state="0" data-category="${escapeHtml(ent.type)}" data-raw="${escapedRaw}" contenteditable="false" onclick="toggleMask(this, '${jsEscapedRaw}')">${escapedRaw}</span>`;
             cursor = overlapEnd;
           }
         });
